@@ -1,11 +1,3 @@
-from abc import ABC
-
-
-class symbol(ABC):
-    def __init__(self, type, value) -> None:
-        super().__init__()
-        self.type = type
-        self.value = value
 
 class expression_form:
     def __init__(self, args) -> None:
@@ -95,7 +87,7 @@ def match_start(expr: expression_form, args, i, flag):
             flag = False
         if expr.show_start: token = args[i]
         i=i+1
-        if i == len(args): 
+        if i == len(args):
             if len(expr.end_form) > 0:
                 return None, i, flag
     else: return None, i, flag
@@ -104,6 +96,8 @@ def match_start(expr: expression_form, args, i, flag):
 def match_rest(expr: expression_form, args, i, flag):
     token = ""
     if expr.rest_form != '*':
+        if i == len(args):
+            return token, i, flag
         while expr.rest_form.count(args[i]) != 0 or (expr.rest_unique_form.count(args[i]) != 0 and flag):
             if expr.show_rest: token = token + args[i]
             i=i+1
@@ -124,7 +118,7 @@ def match_rest(expr: expression_form, args, i, flag):
                     return '*undefined', i, flag
                 else: return token, i, flag
         return token, i, flag
-    
+
 def match_end(expr: expression_form, args, i):
     if len(expr.end_form) == 0: return '', i
     elif expr.end_form.count(args[i]) != 0:
@@ -147,7 +141,7 @@ def match(expr: expression_form, args, i):
         return '*undefined', i
     token = token + aux
     return token, i
-            
+
 def next(args, i):
     aux = None; j = 0
     for expr in valid_expressions:
@@ -158,7 +152,7 @@ def next(args, i):
     if aux != None:
         return aux, j
     else: return '*undefined', i+1
-    
+
 def tokenize(args):
     tokens = []
     act = ""
