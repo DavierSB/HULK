@@ -7,4 +7,5 @@ with open('prueba_long.txt', 'r') as f_in:
 lex = lexer(code)
 while lex.idx < len(code):
     tok = lex.get_next_token()
+    if tok.type == 'ignore': continue
     print(tok)
