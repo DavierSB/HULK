@@ -3,7 +3,7 @@ class node:
         self.next = []
         self.cond = []
         self.write = []
-        self.type = None
+        self.name = None
         self.output = False
         
     def add_next(self, node, cond, write):
@@ -22,25 +22,25 @@ class automata:
     def add_transition(self, i, j, cond, write):
         self.nodes[i].add_next(self.nodes[j], cond, write)
     
-    def set_output(self, idx, type):
+    def set_output(self, idx, name):
         self.nodes[idx].output = True
-        self.nodes[idx].type = type
+        self.nodes[idx].name = name
 
     def match(self, args, idx, line):
-        act = self.start_node; flag = True; k = 0; l = line; token = ''
+        act = self.start_node; flag = True; k = 0; l = line; lexeme = ''
         for i in range(idx, len(args)):
             if not flag: break
             flag = False
             for j in range(len(act.cond)):
                 if act.cond[j](args[i]):
                     if act.write[j]:
-                        token = token + args[i]
+                        lexeme = lexeme + args[i]
                     act = act.next[j]
                     flag = True; k=k+1
                     if args[i] == '\n': l=l+1
                     break
-        if act.output: return act.type, token, l, idx+k
+        if act.output: return lexeme, act.name, l, idx+k
         else:
-            value =  args[idx, idx+k]
-            return 'undefined', value, l, idx+k
+            lexeme =  args[idx, idx+k]
+            return lexeme, 'undefined', l, idx+k
 
