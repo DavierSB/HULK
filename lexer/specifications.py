@@ -38,8 +38,7 @@ def define_language():
     language.set_output(10, 'literal')
 
     #type ignore
-    language.add_transition(0, 11, is_ignore, False)
-    language.set_output(11, 'ignore')
+    language.add_transition(0, 0, is_ignore, False)
     language.add_transition(0, 12, is_backslash, False)
     language.add_transition(12, 13, is_backslash, False)
     language.add_transition(13, 13, is_not_newline, False)
