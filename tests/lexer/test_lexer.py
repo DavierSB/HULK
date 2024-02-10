@@ -9,7 +9,7 @@ from get_next_token import *
 class LexerTest(unittest.TestCase):
     def test_get_next_token(self):
         code = None
-        with open('./tests/lexer/prueba_short.txt', 'r') as f_in:
+        with open('./tests/data/prueba_short.txt', 'r') as f_in:
             code = f_in.read()
         lex = lexer(code)
         while lex.idx < len(code):
