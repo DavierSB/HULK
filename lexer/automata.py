@@ -1,13 +1,19 @@
-from transition import Transition
-class node:
-    def __init__(self) -> None:
+class Transition:
+    def __init__(self, dest_node, condition, to_write):
+        self.dest_node = dest_node
+        self.condition = condition
+        self.to_write = to_write
+
+class Node:
+    def __init__(self, idx) -> None:
+        self.idx = idx
         self.transitions = []
         self.name = None
         self.output = False
 
-class automata:
+class Automata:
     def __init__(self) -> None:
-        self.start_node = node()
+        self.start_node = Node(0)
         self.nodes = [self.start_node]
 
     def add_node(self, node):
