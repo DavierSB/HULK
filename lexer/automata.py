@@ -3,7 +3,7 @@ class node:
         self.next = []
         self.cond = []
         self.write = []
-        self.name = None
+        self.name = 'undefined'
         self.output = False
         
     def add_next(self, node, cond, write):
@@ -40,7 +40,5 @@ class automata:
                     if args[i] == '\n': l=l+1
                     break
         if act.output: return lexeme, act.name, l, idx+k
-        else:
-            lexeme =  args[idx, idx+k]
-            return lexeme, 'undefined', l, idx+k
+        else: return args[idx, idx+k], act.name, l, idx+k
 
