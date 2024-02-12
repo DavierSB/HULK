@@ -19,7 +19,7 @@ class automata:
     def add_node(self, node):
         self.nodes.append(node)
         
-    def add_transition(self, i, j, cond, write):
+    def add_transition(self, i, j, cond, write = True):
         self.nodes[i].add_next(self.nodes[j], cond, write)
     
     def set_output(self, idx, name):

@@ -19,15 +19,12 @@ class lexer:
     
     def get_next_token(self):
         if self.idx == len(self.args): return EOFError("There are no more tokens to read")
-        name = 'ignore'
-        while name == 'ignore':
+        name = 'IGNORE'
+        while name == 'IGNORE':
             lexeme, name, line, k = self.language.match(self.args, self.idx, self.line)
             self.line = line
             self.idx = k
         return self.create_token(lexeme, name, line)
     
     def create_token(self, lexeme, name, line):
-        if self.reserved_words.keys().__contains__(lexeme):
-            return token(lexeme, self.reserved_words[lexeme], line)
-        return token(lexeme, name, line)
-    
+        return token(lexeme, self.reserved_words.get(lexeme, name), line)
