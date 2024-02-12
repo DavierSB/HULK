@@ -1,15 +1,9 @@
+from transition import Transition
 class node:
     def __init__(self) -> None:
-        self.next = []
-        self.cond = []
-        self.write = []
+        self.transitions = []
         self.name = None
         self.output = False
-        
-    def add_next(self, node, cond, write):
-        self.next.append(node)
-        self.cond.append(cond)
-        self.write.append(write)
 
 class automata:
     def __init__(self) -> None:
@@ -20,27 +14,26 @@ class automata:
         self.nodes.append(node)
         
     def add_transition(self, i, j, cond, write = True):
-        self.nodes[i].add_next(self.nodes[j], cond, write)
+        self.nodes[i].transitions.append(Transition(self.nodes[j], cond, write))
     
     def set_output(self, idx, name):
         self.nodes[idx].output = True
         self.nodes[idx].name = name
 
-    def match(self, args, idx, line):
-        act = self.start_node; flag = True; k = 0; l = line; lexeme = ''
-        for i in range(idx, len(args)):
-            if not flag: break
-            flag = False
-            for j in range(len(act.cond)):
-                if act.cond[j](args[i]):
-                    if act.write[j]:
-                        lexeme = lexeme + args[i]
-                    act = act.next[j]
-                    flag = True; k=k+1
-                    if args[i] == '\n': l=l+1
+    def match(self, code, idx, line):
+        act = self.start_node; valid_state = True; k = 0; lexeme = ''
+        for c in code[idx:]:
+            if not valid_state: break
+            valid_state = False
+            for trans in act.transitions:
+                if trans.condition(c):
+                    if trans.to_write:
+                        lexeme = lexeme + c
+                    act = trans.dest_node
+                    valid_state = True; k=k+1
+                    if c == '\n': line=line+1
                     break
-        if act.output: return lexeme, act.name, l, idx+k
+        if act.output: return lexeme, act.name, line, idx+k
         else:
-            lexeme =  args[idx, idx+k]
-            return lexeme, 'undefined', l, idx+k
-
+            lexeme =  code[idx, idx+k]
+            return lexeme, 'UNDEFINED', line, idx+k
