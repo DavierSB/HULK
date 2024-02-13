@@ -1,6 +1,5 @@
-from automata import Automata, Node
+from automata import Automata, Node, Transition
 from conditions import is_equal_to
-from transition import Transition
 
 def add_tokens(language : Automata, tokens):
     for token_lexeme in tokens.keys():
