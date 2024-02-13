@@ -11,20 +11,18 @@ class token:
         return "( " + self.lexeme + "   " + str(self.name) + "   in line " + str(self.line) + " )"
 
 class lexer:
-    def __init__(self, args) -> None:
+    def __init__(self, code) -> None:
         self.language, self.reserved_words = define_language()
-        self.args = args
+        self.code = code
         self.line = 1
         self.idx = 0
     
     def get_next_token(self):
-        if self.idx == len(self.args): return EOFError("There are no more tokens to read")
+        if self.idx == len(self.code): return EOFError("There are no more tokens to read")
         name = 'IGNORE'
         while name == 'IGNORE':
-            lexeme, name, line, k = self.language.match(self.args, self.idx, self.line)
-            self.line = line
-            self.idx = k
-        return self.create_token(lexeme, name, line)
+            lexeme, name, self.line, self.idx = self.language.match(self.code, self.idx, self.line)
+        return self.create_token(lexeme, name, self.line)
     
     def create_token(self, lexeme, name, line):
         return token(lexeme, self.reserved_words.get(lexeme, name), line)
