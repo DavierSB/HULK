@@ -1,9 +1,9 @@
 import unittest
 
-
 import sys
-sys.path.insert(0, '//home/chavely/Documents/start up/compiler/test 1/hulk test/lexer')
+import os
 
+sys.path.insert(0, os.getcwd() + '/lexer')
 from get_next_token import *
 
 class LexerTest(unittest.TestCase):
