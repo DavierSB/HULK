@@ -1,4 +1,4 @@
-import defining_grammar
-import LR_parser
+from defining_grammar import grammar, ecuation
+import parser
 
-LR_parser.parse("", defining_grammar.grammar)
+print(parser.parse_LL(ecuation, grammar))
