@@ -1,6 +1,6 @@
 from typing import List, Dict, Set
 from cmp.pycompiler import Grammar, Production, Symbol, Sentence
-from calculate_firsts import firsts_for_sentence
+from calculate_firsts import calculate_firsts_for_sentence
 
 def calculate_follows(grammar : Grammar):
     initialize_follows(grammar)
@@ -23,7 +23,7 @@ def augment_grammar_follows(grammar : Grammar, production : Production, idx : in
     nonTerminal = sentence[idx]
     chunk = sentence[idx + 1:]
     n_of_elements_before_updating = len(grammar.follows[nonTerminal])
-    firsts = firsts_for_sentence(chunk, grammar)  #Si chunk == [], epsilo pertenece a firsts_for_sentence
+    firsts = calculate_firsts_for_sentence(chunk, grammar)  #Si chunk == [], epsilo pertenece a firsts_for_sentence
     if grammar.Epsilon in firsts:
         grammar.follows[nonTerminal].update(grammar.follows[production.Left])
         firsts.remove(grammar.Epsilon)

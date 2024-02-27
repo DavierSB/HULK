@@ -18,10 +18,10 @@ def initialize_firsts(grammar : Grammar) -> None:
 
 def augment_grammar_firsts(grammar: Grammar, production : Production) -> bool:
     n_of_elements_before_updating = len(grammar.firsts[production.Left])
-    grammar.firsts[production.Left].update(firsts_for_sentence(production.Right, grammar))
+    grammar.firsts[production.Left].update(calculate_firsts_for_sentence(production.Right, grammar))
     return len(grammar.firsts[production.Left]) > n_of_elements_before_updating
 
-def firsts_for_sentence(sentence : Sentence, grammar : Grammar) -> Set[Symbol]:
+def calculate_firsts_for_sentence(sentence : Sentence, grammar : Grammar) -> Set[Symbol]:
     all_contain_epsilon = True
     firsts_set = set()
     for symbol in sentence:
