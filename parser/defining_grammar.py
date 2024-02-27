@@ -3,11 +3,12 @@ import os
 current_dir = os.getcwd()
 sys.path.insert(0, current_dir)
 from cmp.pycompiler import Grammar
+from grammars import Grammar_LL, Grammar_LR
 from cmp.languages import BasicHulk
 from cmp.utils import pprint, inspect
 
 def grammar_LR():
-    G = Grammar()
+    G = Grammar_LR()
     E = G.NonTerminal('E', True)
     T = G.NonTerminal('T')
     plus, star, opar, cpar, num = G.Terminals('+ * ( ) num')
@@ -18,7 +19,7 @@ def grammar_LR():
     return G
 
 def grammar_LL():
-    G = Grammar()
+    G = Grammar_LL()
     E = G.NonTerminal('E', True)
     T,F,X,Y = G.NonTerminals('T F X Y')
     plus, minus, star, div, opar, cpar, num = G.Terminals('+ - * / ( ) num')
@@ -29,6 +30,7 @@ def grammar_LL():
     Y %= star + F + Y | div + F + Y | G.Epsilon
     F %= num | opar + E + cpar
 
-    return G
+    return (G, [num, star, opar, num, plus, num, cpar])
 
-grammar = grammar_LR()
+grammar, ecuation = grammar_LL()
+grammar.initialize()
