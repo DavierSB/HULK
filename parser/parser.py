@@ -1,4 +1,4 @@
-import stack
+from stack import Stack
 from queue import Queue
 from typing import List, Dict, Set
 from cmp.pycompiler import Grammar, Production, Symbol, Sentence
@@ -15,13 +15,14 @@ def apply_production(sentence : Sentence, symbol_idx : int, production : Product
 
 def parse_LR(code : List[Symbol], grammar : Grammar_LR) -> List[Production]:
     actions, goto = grammar.get_table()
-    stack = stack.Stack()
+    stack = Stack()
+    stack.push(0)
     idx = 0
     productions = []
     while True:
         state = stack.peek()
         symbol = code[idx]
-        current_action = actions[state, symbol]
+        current_action = actions[(state, symbol)]
         if current_action.is_shift():
             stack.push(current_action.next_state)
             idx = idx + 1
@@ -31,13 +32,13 @@ def parse_LR(code : List[Symbol], grammar : Grammar_LR) -> List[Production]:
             productions.append(current_production)
             for _ in range(len(current_production.Right)):
                 stack.pop()
-            stack.push(goto(stack.peek(), current_production.Left))
+            stack.push(goto[stack.peek()][current_production.Left])
             continue
         if current_action.is_error():
             pass
         if current_action.is_accept():
-            productions.reverse()
-            return productions
+            break
+    return productions
 
 # Aun no manejamos errores
 def parse_LL(code : List[Symbol], grammar : Grammar_LL):

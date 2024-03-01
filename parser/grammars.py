@@ -3,12 +3,15 @@ from cmp.pycompiler import Grammar, Symbol, Sentence, Production
 from calculate_firsts import calculate_firsts_for_symbols, calculate_firsts_for_sentence
 from calculate_follows import calculate_follows
 from items import Item, Item_Set
+from action import Action
 
 class Grammar_LL(Grammar):
     def __init__(self):
         super().__init__()
         self.firsts : Dict[Symbol, List[Symbol]]
         self.follows : Dict[Symbol, List[Symbol]]
+        self.terminals_set = set(self.terminals)         #Esto para poder saber en O(1) si un simbolo es terminal
+        self.non_terminals_set = set(self.nonTerminals)
     
     def initialize(self) -> None:
         calculate_firsts_for_symbols(self)
@@ -33,6 +36,7 @@ class Grammar_LR(Grammar_LL):
         super().__init__()
         self.kernel_items : Dict[Symbol, List[Item]]
         self.non_kernel_items : Dict[Symbol, List[Item]]
+        self.ccits : Dict[int, Item_Set]
     
     def initialize(self):
         self.augment_grammar()
@@ -82,4 +86,20 @@ class Grammar_LR(Grammar_LL):
 
 
     def get_table(self):
-        pass
+        action = {}
+        for item_set in self.ccits.values():
+            for item in item_set.items:
+                symbol = item.expected_symbol
+                if symbol in self.terminals:
+                    next_state = self.go_to[item_set.id][item.expected_symbol]
+                    action[(item_set.id, symbol)] = Action('shift', next_state)
+                    continue
+                if not(symbol):
+                    left = item.production.Left
+                    if left != self.startSymbol:
+                        for terminal in self.follows[left]:
+                            action[(item_set.id, terminal)] = Action('reduce', item.production)
+                    else:
+                        action[(item_set.id, self.EOF)] = Action('accept')
+        return action, self.go_to
+                

@@ -16,7 +16,7 @@ def grammar_LR():
     E %= T + plus + E | T
     T %= num + star + T | num | opar + E + cpar
 
-    return G
+    return (G, [num, star, opar, num, plus, num, cpar, G.EOF])
 
 def grammar_LL():
     G = Grammar_LL()
@@ -32,5 +32,5 @@ def grammar_LL():
 
     return (G, [num, star, opar, num, plus, num, cpar])
 
-grammar, ecuation = grammar_LL()
+grammar, ecuation = grammar_LR()
 grammar.initialize()

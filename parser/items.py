@@ -19,7 +19,7 @@ class Item:
         return self.production.Right[self.idx_of_point:]
     
     @property
-    def expected_symbol(self):
+    def expected_symbol(self) -> Symbol:
         if self.idx_of_point < len(self.production.Right):
             return self.production.Right[self.idx_of_point]
 
