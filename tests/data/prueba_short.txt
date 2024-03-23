@@ -1,3 +1,0 @@
-print("The message is \"Hello World\"");
-print("The meaning of life is " @ -42E-5);
-a := b
