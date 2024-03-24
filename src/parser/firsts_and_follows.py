@@ -1,7 +1,10 @@
 import os
 import sys
-sys.path.insert(0, os.path.dirname(os.getcwd()))
+current_dir = os.getcwd()
+sys.path.insert(0, current_dir + '/src')
 from cmp.utils import ContainerSet
+from cmp.pycompiler import Sentence
+from itertools import islice
 
 def compute_local_first(firsts, alpha):
     first_alpha = ContainerSet()
@@ -43,7 +46,6 @@ def compute_firsts(G):
             local_first = compute_local_first(firsts, alpha)
             change |= first_alpha.hard_update(local_first)
             change |= first_X.hard_update(local_first)
-    
     return firsts
 
 def compute_follows(G, firsts):
@@ -65,9 +67,8 @@ def compute_follows(G, firsts):
             for i in range(len(alpha)):
                 Y = alpha[i]
                 if Y.IsNonTerminal:
-                    zeta = alpha[:i]
-                    beta = alpha[i+1:]
-                    if len(beta) > 0:
+                    beta = Sentence(*islice(alpha, i+1, None))
+                    if i + 1 < len(alpha):
                         if not (beta in firsts):
                             firsts[beta] = compute_local_first(firsts, beta)
                         firsts_of_beta = firsts[beta]

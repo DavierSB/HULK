@@ -13,10 +13,12 @@ class ShiftReduceParser:
     def _build_parsing_table(self):
         raise NotImplementedError()
 
-    def __call__(self, w):
+    def __call__(self, w, get_shift_reduce= False):
         stack = [ 0 ]
         cursor = 0
         output = []
+        if get_shift_reduce:
+            operations = []
         
         while True:
             state = stack[-1]
@@ -25,6 +27,8 @@ class ShiftReduceParser:
             # Your code here!!! (Detect error)
             
             action, tag = self.action[state, lookahead]
+            if get_shift_reduce:
+                operations.append(action)
             match action:
                 case self.SHIFT:
                     stack.append(tag)
@@ -37,4 +41,7 @@ class ShiftReduceParser:
                     stack.append(self.goto[state, production.Left])
                     output.append(production)
                 case self.OK:
-                    return output
+                    if get_shift_reduce:
+                        return output, operations[:-1]# lo del -1 es un parche, para no devolver la accion OK
+                    else:
+                        return output

@@ -1,6 +1,7 @@
 import os
 import sys
-sys.path.insert(0, os.path.dirname(os.getcwd()))
+current_dir = os.getcwd()
+sys.path.insert(0, current_dir + '/src')
 from cmp.pycompiler import Item
 from cmp.automata import State
 from shift_reduce_parser import ShiftReduceParser

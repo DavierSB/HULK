@@ -1,5 +1,9 @@
 from cmp.pycompiler import EOF
-from cmp.tools.parsing import ShiftReduceParser
+import os
+import sys
+current_dir = os.getcwd()
+sys.path.insert(0, current_dir + '/src/parser')
+from parser.shift_reduce_parser import ShiftReduceParser
 
 def evaluate_reverse_parse(right_parse, operations, tokens):
     if not right_parse or not operations or not tokens:
@@ -18,7 +22,7 @@ def evaluate_reverse_parse(right_parse, operations, tokens):
             attributes = production.attributes
             assert all(rule is None for rule in attributes[1:]), 'There must be only synteticed attributes.'
             rule = attributes[0]
-
+            
             if len(body):
                 synteticed = [None] + stack[-len(body):]
                 value = rule(None, synteticed)
