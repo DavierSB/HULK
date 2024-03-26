@@ -143,3 +143,22 @@ def no_quotes_or_space_test():
 
 no_quotes_or_space_test()
 print("LLEGUEEEE")
+
+print(lexer("3.14 5 0.25 13"))
+print(lexer('Davier _hola    3.14   \\"Hola mundo\\"   casca9jal 9'))
+print(lexer('"Hola Mundo  soy Davier"'))
+print(lexer('The message is \\"Hello World\\"'))
+print(lexer('"Hola Mundo  el mensaje era \\"Hello World\\" y m satisface"'))
+print(lexer('"Y mas aun si sabemos \\"Hello World\\" o:"" Te amo Marian"'))
+print(lexer('42;'))
+print(lexer('print(42);'))
+print(lexer('print((((1 + 2) ^ 3) * 4) / 5);'))
+print(lexer('print("Hello World");'))
+print(lexer('print("The message is \"Hello World\"");'))
+print(lexer('print("The meaning of life is " @ 42);'))
+print(lexer('print(sin(2 * PI) ^ 2 + cos(3 * PI / log(4, 64)));'))
+print(lexer("""{
+    print(42);
+    print(sin(PI/2));
+    print("Hello World");
+}"""))

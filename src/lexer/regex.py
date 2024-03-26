@@ -37,7 +37,7 @@ def regex_tokenizer(text : str, skip_whitespaces=True):
                     open_quote = True
                 if open_quote and not scaped:
                     open_quote = False
-            if char.isspace() and not scaped and not open_quote:
+            if char == ' ' and not scaped and not open_quote:
                 continue
             new_text += text[i]
     text = new_text
@@ -59,8 +59,6 @@ def regex_tokenizer(text : str, skip_whitespaces=True):
             scaped = False
         
     tokens.append(Token('$', G.EOF))
-    #print([token.lex for token in tokens])
-    #input()
     return tokens
 
 def literal_test():

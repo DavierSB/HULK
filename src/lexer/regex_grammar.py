@@ -53,6 +53,7 @@ def get_characters_between(a, b):
 def get_all_characters():
     all_chars = get_characters_between('!', chr(126))
     all_chars.add(' ')
+    all_chars.add(chr(10))#salto de linea
     return all_chars
 
 all_chars = get_all_characters()

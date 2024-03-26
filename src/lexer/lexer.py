@@ -10,11 +10,12 @@ from token_types import tokens, reserved_words
 from regex_grammar import G
 
 class Lexer:
-    def __init__(self, table, eof):
+    def __init__(self, table, reserved_words, eof):
         self.eof = eof
         self.regexs = self._build_regexs(table)
         self.automaton = self._build_automaton()
-    
+        self._prepare_reserved_words(reserved_words)
+
     def _build_regexs(self, table):
         regexs = []
         for n, token_type in enumerate(table):
@@ -30,7 +31,16 @@ class Lexer:
         start = State('start')
         for automaton in self.regexs:
             start.add_epsilon_transition(automaton)
-        return start.to_deterministic()    
+        return start.to_deterministic()
+
+    def _prepare_reserved_words(self, reserved_words):
+        self.reserved_words = {regex : token_type for token_type, regex in reserved_words.items()}
+        for key in list(self.reserved_words.keys()):
+            if '|' in key:
+                regexs = key.split('|')
+                for regex in regexs:
+                    self.reserved_words[regex] = self.reserved_words[key]
+                self.reserved_words.pop(key)
         
     def _walk(self, string):
         state = self.automaton
@@ -64,12 +74,21 @@ class Lexer:
         yield '$', self.eof
     
     def __call__(self, text):
-        return [ Token(lex, ttype) for lex, ttype in self._tokenize(text) ]
+        tokens = [ Token(lex, ttype) for lex, ttype in self._tokenize(text) ]
+        for token in tokens:
+            if token.lex in self.reserved_words:
+                token.token_type = self.reserved_words[token.lex]
+        return [token for token in tokens if token.token_type != "IGNORE"]
 
 all_tokens = tokens
-all_tokens.update(reserved_words)
-lexer = Lexer(all_tokens, G.EOF)
-#print(lexer("3.14 5 0.25 13"))
-#print(lexer('Davier _hola    3.14   \\"Hola mundo\\"   casca9jal 9'))
-#print(lexer('"Hola Mundo  soy Davier"'))
-#print(lexer('The message is \\"Hello World\\"'))
+lexer = Lexer(tokens, reserved_words, G.EOF)
+
+def the_ultimate_test():
+    with open('src/tests/data/prueba_long.txt', 'r') as f_in:
+        code = f_in.read()
+    tokens = lexer(code)
+    for token in tokens:
+        print(token)
+        input()
+
+the_ultimate_test()
