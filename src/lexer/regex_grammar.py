@@ -36,11 +36,26 @@ class ConcatNode(BinaryNode):
 
 class CharGroupNode(AtomicNode):
     def evaluate(self):
-        lvalue, rvalue = self.lex
-        automaton = SymbolNode(lvalue).evaluate()
-        for idx in range(ord(lvalue) + 1, ord(rvalue) + 1):
-            automaton = automata_union(automaton, SymbolNode(chr(idx)).evaluate())
+        automatons = []
+        for char in self.lex:
+            automatons.append(SymbolNode(char).evaluate())
+        automaton = automatons[0]
+        for atm in automatons:
+            automaton = automata_union(automaton, atm)
         return automaton
+
+def get_characters_between(a, b):
+    characters = []
+    for i in range(ord(a), ord(b) + 1):
+        characters.append(chr(i))
+    return set(characters)
+
+def get_all_characters():
+    all_chars = get_characters_between('!', chr(126))
+    all_chars.add(' ')
+    return all_chars
+
+all_chars = get_all_characters()
 
 G = Grammar()
 
@@ -48,14 +63,15 @@ G = Grammar()
 #expression
 E = G.NonTerminal('E', True)
 # subexpression, term, atom, char, quantifier 
-S, T, A, C, Q = G.NonTerminals('S T A C Q')
+S, T, A, C, D, Q = G.NonTerminals('S T A C D Q')
 
-pipe, star, minus, opar, cpar, obrckt, cbrckt, character, epsilon = G.Terminals('| * - ( ) [ ] character ε')
+pipe, star, minus, caret, opar, cpar, obrckt, cbrckt, character, epsilon = G.Terminals('| * - ^ ( ) [ ] character ε')
 
 fixed_tokens = {
         '|': Token('|', pipe),
         '*': Token('*', star),
         '-': Token('-', minus),
+        '^': Token('^', caret),
         'ε': Token('ε', epsilon),
         '(': Token('(', opar),
         ')': Token(')', cpar),
@@ -78,4 +94,8 @@ A %= epsilon, lambda h, s : EpsilonNode(s[1])
 A %= C, lambda h, s : s[1]
 A %= opar + E + cpar, lambda h, s : s[2]
 C %= character, lambda h, s : SymbolNode(s[1])
-C %= obrckt + character + minus + character + cbrckt, lambda h, s : CharGroupNode((s[2], s[4]))
+C %= obrckt + D, lambda h, s : CharGroupNode(s[2])
+C %= obrckt + caret + D, lambda h, s : CharGroupNode(all_chars.difference(s[3]))
+D %= character + D, lambda h, s : set([s[1]]).union(s[2])
+D %= character + minus + character + D, lambda h, s : get_characters_between(s[1], s[3]).union(s[4])
+D %= cbrckt, lambda h, s : set()

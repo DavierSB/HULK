@@ -5,7 +5,9 @@ sys.path.insert(0, current_dir + '/src')
 sys.path.insert(0, current_dir + '/lexer')
 from cmp.automata import State
 from cmp.utils import Token
-from lexer.regex import Regex
+from regex import Regex
+from token_types import tokens, reserved_words
+from regex_grammar import G
 
 class Lexer:
     def __init__(self, table, eof):
@@ -15,7 +17,8 @@ class Lexer:
     
     def _build_regexs(self, table):
         regexs = []
-        for n, (token_type, regex) in enumerate(table):
+        for n, token_type in enumerate(table):
+            regex = table[token_type]
             automaton, states = State.from_nfa(Regex(regex).automaton, True)
             for state in states:
                 if state.final:
@@ -62,3 +65,11 @@ class Lexer:
     
     def __call__(self, text):
         return [ Token(lex, ttype) for lex, ttype in self._tokenize(text) ]
+
+all_tokens = tokens
+all_tokens.update(reserved_words)
+lexer = Lexer(all_tokens, G.EOF)
+#print(lexer("3.14 5 0.25 13"))
+#print(lexer('Davier _hola    3.14   \\"Hola mundo\\"   casca9jal 9'))
+#print(lexer('"Hola Mundo  soy Davier"'))
+#print(lexer('The message is \\"Hello World\\"'))

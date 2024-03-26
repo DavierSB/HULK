@@ -10,6 +10,7 @@ from parser.slr1_parser import SLR1Parser
 from cmp.utils import Token
 from cmp.evaluation import evaluate_reverse_parse
 from parser.slr1_parser import SLR1Parser
+from token_types import tokens
 
 class Regex:
     def __init__(self, pattern : str):
@@ -23,8 +24,25 @@ class Regex:
         self.automaton = dfa
 
 def regex_tokenizer(text : str, skip_whitespaces=True):
+    #First we remove non-scaped whitespaces that are not within a literal
+    new_text = ''
+    open_quote = False
     if skip_whitespaces:
-        text = text.replace(' ', '')
+        for i in range(len(text)):
+            previous_char = text[i-1] if i > 0 else None
+            char = text[i]
+            scaped = (previous_char == '\\')
+            if char == '"':
+                if (not open_quote):
+                    open_quote = True
+                if open_quote and not scaped:
+                    open_quote = False
+            if char.isspace() and not scaped and not open_quote:
+                continue
+            new_text += text[i]
+    text = new_text
+
+    #Now we tokenize
     tokens = []
     scaped = False
     for i in range(len(text)):
@@ -41,44 +59,17 @@ def regex_tokenizer(text : str, skip_whitespaces=True):
             scaped = False
         
     tokens.append(Token('$', G.EOF))
+    #print([token.lex for token in tokens])
+    #input()
     return tokens
 
-def basic_test():
-    dfa = Regex('a*(a|b)*cd | ε').automaton
-    assert dfa.recognize('')
-    assert dfa.recognize('cd')
-    assert dfa.recognize('aaaaacd')
-    assert dfa.recognize('bbbbbcd')
-    assert dfa.recognize('bbabababcd')
-    assert dfa.recognize('aaabbabababcd')
-    
-    assert not dfa.recognize('cda')
-    assert not dfa.recognize('aaaaa')
-    assert not dfa.recognize('bbbbb')
-    assert not dfa.recognize('ababba')
-    assert not dfa.recognize('cdbaba')
-    assert not dfa.recognize('cababad')
-    assert not dfa.recognize('bababacc')
+def literal_test():
+    dfa = Regex(tokens['LITERAL']).automaton
+    assert not dfa.recognize('')
+    assert dfa.recognize('"a"')
+    assert dfa.recognize('"Hola"')
+    assert dfa.recognize('"Hola Mundo"')
+    assert dfa.recognize('"Hola me llamo \\"Davier\\" que bola"')
 
-def groups_test(dfa):
-    assert dfa.recognize('7.25')
-
-def scapes_test():
-    def put_scapes(pattern):
-        new_pattern = pattern.replace('K', '\\')
-        return new_pattern
-    dfa = Regex(put_scapes('(K*K*KK*)*')).automaton
-    assert dfa.recognize('')
-    assert dfa.recognize('**')
-    assert dfa.recognize('****')
-    assert dfa.recognize('********')
-    assert dfa.recognize('**\\\\\\')
-    assert dfa.recognize(put_scapes('**KKKKKK'))
-
-    assert not dfa.recognize('***')
-    assert not dfa.recognize('*****')
-    assert not dfa.recognize('*******')
-
-#basic_test()
-scapes_test()
-#print("LLEGUEEEEEEEEE")
+#literal_test()
+#print("LLEGUEEEEEE")
