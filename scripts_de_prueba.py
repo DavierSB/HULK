@@ -59,5 +59,41 @@ scripts = [
     x := "Ohlaleliju";
     sin(cos(x));
     }
-    }"""#18
+    }""",#18
+    """function gcd(a, b) => while (a > 0)
+    let m = a % b in {
+        b := a;
+        a := m;
+    }42;
+    """,#19
+    """
+    function tan(x) => sin(x)/cos(x);
+    function alligator(){"Croac";}
+    tan(alligator());
+    """,#20
+    """type Point {
+    x = 0;
+    y = 0;
+
+    getX() => self.x;
+    getY() => self.y;
+
+    setX(x) => self.x := x;
+    setY(y) => self.y := y;
+    }42;""", #21
+    """type Range(min:Number, max:Number) {
+    min = min;
+    max = max;
+    current = min - 1;
+
+    next(): Boolean => (self.current := self.current + 1) < max;
+    current(): Number => self.current;
+}
+type Knight inherits Person {
+    name() => "Sir" @@ base();
+}
+function fib(n) => if (n == 0 | n == 1) 1 else fib(n-1) + fib(n-2);
+function fact(x) => let f = 1 in for (i in range(1, x+1)) f := f * i;
+42;
+""", #22
     ]

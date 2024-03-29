@@ -12,9 +12,9 @@ from src.lexer.lexer import lexer
 from scripts_de_prueba import scripts
 
 parser = SLR1Parser(G)
-tokens = lexer(scripts[18])
+tokens = lexer(scripts[22])
 tokens_filtered = [G[token.token_type] for token in tokens]
 tokens_filtered[-1] = G.EOF
-right_parse, operations = parser(tokens_filtered, get_shift_reduce= True, show= True)
+right_parse, operations = parser(tokens_filtered, get_shift_reduce= True, show= False)
 for production in right_parse:
     print(production)
