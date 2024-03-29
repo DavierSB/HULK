@@ -81,5 +81,9 @@ class SLR1Parser(ShiftReduceParser):
                     SLR1Parser._register(self.goto, (idx, next_symbol), next_node)
     @staticmethod
     def _register(table, key, value):
-        assert ((key not in table) or (table[key] == value)), 'Shift-Reduce or Reduce-Reduce conflict!!!'
+        try:
+            assert ((key not in table) or (table[key] == value)), 'Shift-Reduce or Reduce-Reduce conflict!!!'
+        except:
+            print(key)
+            input()
         table[key] = value

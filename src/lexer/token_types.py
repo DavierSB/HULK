@@ -26,7 +26,6 @@ tokens = {
     'RPAREN' : '\)',
     'LBRACE' : '\{',
     'RBRACE' : '\}',
-    'QUOTE' : '"',
     'IGNORE' : '(\ |' + line_jump + ')(\ |' + line_jump + ')*'
     }
 
@@ -40,6 +39,7 @@ reserved_words = {
         'IN' : 'in',
         'IF' : 'if',
         'ELSE' : 'else',
+        'ELIF' : 'elif',
         'WHILE' : 'while',
         'FOR' : 'for',
         'RANGE' : 'range',
@@ -48,5 +48,9 @@ reserved_words = {
         'NEW' : 'new',
         'INHERITS' : 'inherits',
         'PROTOCOL' : 'protocol',
-        'EXTENDS' : 'extends'
+        'EXTENDS' : 'extends',
+        'BOOLEAN_TYPE' : 'Boolean',
+        'STRING_TYPE' : 'String',
+        'NUMBER_TYPE' : 'Number',
+        'PREDEFINED_TYPE' : 'Boolean|Object|String|Number',
     }
