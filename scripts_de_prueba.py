@@ -95,5 +95,5 @@ type Knight inherits Person {
 function fib(n) => if (n == 0 | n == 1) 1 else fib(n-1) + fib(n-2);
 function fact(x) => let f = 1 in for (i in range(1, x+1)) f := f * i;
 42;
-""", #22
+""" #22
     ]

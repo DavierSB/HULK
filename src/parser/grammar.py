@@ -3,6 +3,7 @@ import sys
 current_dir = os.getcwd()
 sys.path.insert(0, current_dir + '/src')
 from cmp.pycompiler import Grammar
+from semantic_checking.AST import *
 G = Grammar()
 
 #NonTerminals
@@ -34,164 +35,165 @@ type_, self_, new_ = G.Terminals('TYPE SELF NEW')
 inherits, protocol, extends = G.Terminals('INHERITS PROTOCOL EXTENDS')
 predefined_type = G.Terminal('PREDEFINED_TYPE')
 
-program %= expression + semicolon
-program %= standalone_expression
-program %= statement + program
+program %= expression + semicolon, lambda h, s: ProgramNode([], s[1])
+program %= standalone_expression, lambda h, s: ProgramNode([], s[1])
+program %= statement + program, lambda h, s: ProgramNode([s[1]] + s[2].statements, s[2].expression)
 
-statement %= function_definition
-statement %= type_definition
+statement %= function_definition, lambda h, s: s[1]
+statement %= type_definition, lambda h, s: s[1]
 
 #Standalone Expression
-standalone_expression %= let_ + declarations + in_ + standalone_expression
-standalone_expression %= if_ + if_body + else_ + standalone_expression
-standalone_expression %= while_ + lparen + expression + rparen + standalone_expression
-standalone_expression %= for_ + lparen + id + type_annotation + in_ + expression + rparen + standalone_expression
-standalone_expression %= expression_block
+standalone_expression %= let_ + declarations + in_ + standalone_expression, lambda h, s: LetNode(s[2], s[4])
+standalone_expression %= if_ + if_body + else_ + standalone_expression, lambda h, s: IfNode(s[2].expressions, s[2].conditions, s[4])
+standalone_expression %= while_ + lparen + expression + rparen + standalone_expression, lambda h, s: WhileNode(s[3], s[5])
+standalone_expression %= for_ + lparen + id + type_annotation + in_ + expression + rparen + standalone_expression, lambda h, s: ForNode(IDNode(s[3]), s[4], s[6], s[8])
+standalone_expression %= expression_block, lambda h, s: s[1]
 
 #Expression
-expression %= disjunction
-expression %= let_expression
-expression %= if_expression
-expression %= while_expression
-expression %= for_expression
-expression %= instantiation
-expression %= reassignable + reassign + expression
-expression %= expression_block
+expression %= disjunction, lambda h, s: s[1]
+expression %= let_expression, lambda h, s: s[1]
+expression %= if_expression, lambda h, s: s[1]
+expression %= while_expression, lambda h, s: s[1]
+expression %= for_expression, lambda h, s: s[1]
+expression %= instantiation, lambda h, s: s[1]
+expression %= reassignable + reassign + expression, lambda h, s: ReassignNode(s[1], s[3])
+expression %= expression_block, lambda h, s: s[1]
 
 #Simple Expression
-disjunction %= conjunction
-disjunction %= conjunction + or_ + disjunction
+disjunction %= conjunction, lambda h, s: s[1]
+disjunction %= conjunction + or_ + disjunction, lambda h, s: OrNode(s[1], s[3])
 
-conjunction %= proposition
-conjunction %= proposition + and_ + conjunction
+conjunction %= proposition, lambda h, s: s[1]
+conjunction %= proposition + and_ + conjunction, lambda h, s: AndNode(s[1], s[3])
 
-proposition %= boolean_term
-proposition %= not_ + proposition
+proposition %= boolean_term, lambda h, s: s[1]
+proposition %= not_ + proposition, lambda h, s: NotNode(s[2])
 
-boolean_term %= concatenation
-boolean_term %= concatenation + comparer + boolean_term
+boolean_term %= concatenation, lambda h, s: s[1]
+boolean_term %= concatenation + comparer + boolean_term, lambda h, s: ComparerNode(s[1], s[3], s[2])
 
-concatenation %= arithmetic_expression
-concatenation %= arithmetic_expression + concat + concatenation
+concatenation %= arithmetic_expression, lambda h, s: s[1]
+concatenation %= arithmetic_expression + concat + concatenation, lambda h, s: ConcatNode(s[1], s[3], s[2])
 
-arithmetic_expression %= factor
-arithmetic_expression %= factor + sum_operator + arithmetic_expression
+arithmetic_expression %= factor, lambda h, s: s[1]
+arithmetic_expression %= factor + sum_operator + arithmetic_expression, lambda h, s: ArithmeticNode(s[1], s[3], s[2])
 
-sum_operator %= plus
-sum_operator %= minus
+sum_operator %= plus, lambda h, s: s[1]
+sum_operator %= minus, lambda h, s: s[1]
 
-factor %= power_term
-factor %= power_term + mult_operator + factor
+factor %= power_term, lambda h, s: s[1]
+factor %= power_term + mult_operator + factor, lambda h, s: ArithmeticNode(s[1], s[3], s[2])
 
-mult_operator %= times
-mult_operator %= divide
-mult_operator %= module
+mult_operator %= times, lambda h, s: s[1]
+mult_operator %= divide, lambda h, s: s[1]
+mult_operator %= module, lambda h, s: s[1]
 
-power_term %= monomial
-power_term %= monomial + power + power_term
+power_term %= monomial, lambda h, s: s[1]
+power_term %= monomial + power + power_term, lambda h, s: ArithmeticNode(s[1], s[3], s[2])
 
-monomial %= term
-monomial %= minus + term
+monomial %= term, lambda h, s: s[1]
+monomial %= minus + term, lambda h, s: ArithmeticNode(NumberNode('0'), s[3], '-')
 
-term %= number
-term %= literal
-term %= boolean
-term %= reassignable
-term %= not_reassignable
+term %= number, lambda h, s: NumberNode(s[1])
+term %= constant, lambda h, s: NumberNode('3.14') if s[1] == 'PI' else NumberNode('2.72')
+term %= literal, lambda h, s: LiteralNode(s[1])
+term %= boolean, lambda h, s: BooleanNode(s[1])
+term %= reassignable, lambda h, s: s[1]
+term %= not_reassignable, lambda h, s: s[1]
 
-reassignable %= end_of_reassignable
-reassignable %= self_ + dot + end_of_reassignable
-reassignable %= lparen + expression + rparen + end_of_reassignable
+reassignable %= end_of_reassignable, lambda h, s: s[1]
+reassignable %= self_ + dot + end_of_reassignable, lambda h, s: MemberNode(SelfNode(), s[3])
+reassignable %= lparen + expression + rparen + end_of_reassignable, lambda h, s: MemberNode(s[2], s[3])
 
-end_of_reassignable %= id
-end_of_reassignable %= id + dot + end_of_reassignable
-end_of_reassignable %= function_call + dot + end_of_reassignable
+end_of_reassignable %= id, lambda h, s: IDNode(s[1])
+end_of_reassignable %= id + dot + end_of_reassignable, lambda h, s: MemberNode(IDNode(s[1]), s[3])
+end_of_reassignable %= function_call + dot + end_of_reassignable, lambda h, s: MemberNode(s[1], s[3])
 
-not_reassignable %= end_of_not_reassignable
-not_reassignable %= self_ + dot + end_of_not_reassignable
-not_reassignable %= lparen + expression + rparen
-not_reassignable %= lparen + expression + rparen + end_of_not_reassignable
+not_reassignable %= end_of_not_reassignable, lambda h, s: s[1]
+not_reassignable %= self_ + dot + end_of_not_reassignable, lambda h, s: MemberNode(SelfNode(), s[3])
+not_reassignable %= lparen + expression + rparen, lambda h, s: s[2]
+not_reassignable %= lparen + expression + rparen + end_of_not_reassignable, lambda h, s: MemberNode(s[2], s[3])
 
-end_of_not_reassignable %= function_call
-end_of_not_reassignable %= id + dot + end_of_not_reassignable
-end_of_not_reassignable %= function_call + dot + end_of_not_reassignable
+end_of_not_reassignable %= function_call, lambda h, s: s[1]
+end_of_not_reassignable %= id + dot + end_of_not_reassignable, lambda h, s: MemberNode(s[1], s[3])
+end_of_not_reassignable %= function_call + dot + end_of_not_reassignable, lambda h, s: MemberNode(s[1], s[3])
 
-function_call %= function_name + lparen + arguments + rparen
+function_call %= function_name + lparen + arguments + rparen, lambda h, s: FunctionCallNode(s[1], s[3])
 
-function_name %= id
-function_name %= math_function
-function_name %= print_
-function_name %= range_
+function_name %= id, lambda h, s: FunctionNameNode(s[1])
+function_name %= math_function, lambda h, s: FunctionNameNode(s[1])
+function_name %= print_, lambda h, s: FunctionNameNode(s[1])
+function_name %= range_, lambda h, s: FunctionNameNode(s[1])
 
-arguments %= expression + comma + arguments
-arguments %= expression
-arguments %= G.Epsilon
+arguments %= expression + comma + arguments, lambda h, s: [s[1]] + s[3]
+arguments %= expression, lambda h, s: [s[1]]
+arguments %= G.Epsilon, lambda h, s: []
 
 #Let
-let_expression %= let_ + declarations + in_ + expression
+let_expression %= let_ + declarations + in_ + expression, lambda h, s: LetNode(s[2], s[4])
 
-declarations %= id + type_annotation + assign + expression
-declarations %= id + type_annotation + assign + expression + comma + declarations
+declarations %= id + type_annotation + assign + expression, lambda h, s: [DeclarationNode(IDNode(s[1]), s[2], s[4])]
+declarations %= id + type_annotation + assign + expression + comma + declarations, lambda h, s: [DeclarationNode(IDNode(s[1]), s[2], s[4])] + s[5]
 
 #Type_annotation
-type_annotation %= colon + type_name
-type_annotation %= G.Epsilon
+type_annotation %= colon + type_name, lambda h, s: s[2]
+type_annotation %= G.Epsilon, lambda h, s: TypeNameNode()
 
-type_name %= id
-type_name %= predefined_type
+type_name %= id, lambda h, s: TypeNameNode(s[1])
+type_name %= predefined_type, lambda h, s: TypeNameNode(s[1])
 
 #If
-if_expression %= if_ + if_body + else_ + expression
+if_expression %= if_ + if_body + else_ + expression, lambda h, s: IfNode(s[2].conditions, s[2].expressions, s[4])
 
-if_body %= lparen + expression + rparen + expression
-if_body %= lparen + expression + rparen + expression + elif_ + if_body
+if_body %= lparen + expression + rparen + expression, lambda h, s: IfNode([s[2]], [s[4]], None)
+if_body %= lparen + expression + rparen + expression + elif_ + if_body, lambda h, s: IfNode([s[2]] + s[6].conditions, [s[4]] + s[6].expressions, None)
 
 #Loops
-while_expression %= while_ + lparen + expression + rparen + expression
+while_expression %= while_ + lparen + expression + rparen + expression, lambda h, s: WhileNode(s[3], s[5])
 
-for_expression %= for_ + lparen + id + type_annotation + in_ + expression + rparen + expression
+for_expression %= for_ + lparen + id + type_annotation + in_ + expression + rparen + expression, lambda h, s: ForNode(IDNode(s[3]), s[4], s[6], s[8])
 
 #Instantiation
-instantiation %= new_ + type_name + lparen + arguments + rparen
+instantiation %= new_ + type_name + lparen + arguments + rparen, lambda h, s: NewNode(s[2], s[4])
 
 #Expression_block
-expression_block %= lbrace + expression_list + rbrace
+expression_block %= lbrace + expression_list + rbrace, lambda h, s: ExpressionBlockNode(s[2])
 
-expression_list %= expression + semicolon
-expression_list %= standalone_expression
-expression_list %= standalone_expression + expression_list
-expression_list %= expression + semicolon + expression_list
+expression_list %= expression + semicolon, lambda h, s: [s[1]]
+expression_list %= standalone_expression, lambda h, s: [s[1]]
+expression_list %= standalone_expression + expression_list, lambda h, s: [s[1]] + s[2]
+expression_list %= expression + semicolon + expression_list, lambda h, s: [s[1]] + s[3]
 
 #Function definition
-function_definition %= function_ + function_definition_body
+function_definition %= function_ + function_definition_body, lambda h, s: s[2]
 
-function_definition_body %= id + lparen + parameters + rparen + type_annotation + function_body
+function_definition_body %= id + lparen + parameters + rparen + type_annotation + function_body, lambda h, s: FunctionDefinitionNode(FunctionNameNode(s[1]), s[3], s[5], s[6])
 
-function_body %= lambda_ + expression_for_inline_function + semicolon
-function_body %= expression_block
+function_body %= lambda_ + expression_for_inline_function + semicolon, lambda h, s: s[2]
+function_body %= expression_block, lambda h, s: s[1]
 
-expression_for_inline_function %= disjunction
-expression_for_inline_function %= let_expression
-expression_for_inline_function %= if_expression
-expression_for_inline_function %= while_expression
-expression_for_inline_function %= for_expression
-expression_for_inline_function %= instantiation
-expression_for_inline_function %= reassignable + reassign + expression_for_inline_function
+expression_for_inline_function %= disjunction, lambda h, s: s[1]
+expression_for_inline_function %= let_expression, lambda h, s: s[1]
+expression_for_inline_function %= if_expression, lambda h, s: s[1]
+expression_for_inline_function %= while_expression, lambda h, s: s[1]
+expression_for_inline_function %= for_expression, lambda h, s: s[1]
+expression_for_inline_function %= instantiation, lambda h, s: s[1]
+expression_for_inline_function %= reassignable + reassign + expression_for_inline_function, lambda h, s: ReassignNode(s[1], s[3])
 
-parameters %= G.Epsilon
-parameters %= id + type_annotation
-parameters %= id + type_annotation + comma + parameters
+parameters %= G.Epsilon, lambda h, s: []
+parameters %= id + type_annotation, lambda h, s: [(IDNode(s[1]), s[2])]
+parameters %= id + type_annotation + comma + parameters, lambda h, s: [(IDNode(s[1]), s[2])] + s[4]
 
 #Type definition
-type_definition %= type_ + id + type_block
-type_definition %= type_ + id + lparen + parameters + rparen + type_block
-type_definition %= type_ + id + inherits + type_name + type_block
-type_definition %= type_ + id + lparen + parameters + rparen + inherits + type_name + type_block
-type_definition %= type_ + id + lparen + parameters + rparen + inherits + type_name + lparen + arguments + rparen + type_block
+type_definition %= type_ + id + type_block, lambda h, s: TypeDefinitionNode(TypeNameNode(s[2]), [], None, None, s[3])
+type_definition %= type_ + id + lparen + parameters + rparen + type_block, lambda h, s: TypeDefinitionNode(TypeNameNode(s[2]), s[4], None, None, s[6])
+type_definition %= type_ + id + inherits + type_name + type_block, lambda h, s: TypeDefinitionNode(TypeNameNode(s[2]), [], TypeNameNode(s[4]), [], s[5])
+type_definition %= type_ + id + lparen + parameters + rparen + inherits + type_name + type_block, lambda h, s: TypeDefinitionNode(TypeNameNode(s[2]), s[4], TypeNameNode(s[7]), [], s[8])
+type_definition %= type_ + id + lparen + parameters + rparen + inherits + type_name + lparen + arguments + rparen + type_block, lambda h, s: TypeDefinitionNode(TypeNameNode(s[2]), s[4], TypeNameNode(s[7]), s[9], s[11])
 
-type_block %= lbrace + internal_declarations + rbrace
+type_block %= lbrace + internal_declarations + rbrace, lambda h, s: s[2]
 
-internal_declarations %= G.Epsilon
-internal_declarations %= id + type_annotation + assign + expression + semicolon + internal_declarations
-internal_declarations %= id + type_annotation + assign + standalone_expression + internal_declarations
-internal_declarations %= function_definition_body + internal_declarations
+internal_declarations %= G.Epsilon, lambda h, s: ([], [])
+internal_declarations %= id + type_annotation + assign + expression + semicolon + internal_declarations, lambda h, s: ([DeclarationNode(IDNode(s[1]), s[2], s[4])] + s[6][0], s[6][1])
+internal_declarations %= id + type_annotation + assign + standalone_expression + internal_declarations, lambda h, s: ([DeclarationNode(IDNode(s[1]), s[2], s[4])] + s[6][0], s[6][1])
+internal_declarations %= function_definition_body + internal_declarations, lambda h, s: (s[2][0], [s[1]] + s[2][1])
