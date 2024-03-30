@@ -9,7 +9,7 @@ G = Grammar()
 #NonTerminals
 program = G.NonTerminal('PROGRAM', True)
 expression, statement = G.NonTerminals('EXPRESSION STATEMENT')
-disjunction, conjunction, proposition, boolean_term, concatenation, arithmetic_expression, sum_operator, factor, mult_operator, power_term, monomial, constant_term, term = G.NonTerminals('DISJUNCTION CONJUNCTION PROPOSITION BOOLEAN_TERM CONCATENATION ARITHMETIC_EXPRESSION SUM_OPERATOR FACTOR MULT_OPERATOR POWER_TERM MONOMIAL CONSTANT_TERM TERM')
+disjunction, conjunction, proposition, is_expression, boolean_term, concatenation, arithmetic_expression, sum_operator, factor, mult_operator, power_term, monomial, constant_term, term, casted_term = G.NonTerminals('DISJUNCTION CONJUNCTION PROPOSITION IS_EXPRESSION BOOLEAN_TERM CONCATENATION ARITHMETIC_EXPRESSION SUM_OPERATOR FACTOR MULT_OPERATOR POWER_TERM MONOMIAL CONSTANT_TERM TERM CASTED_TERM')
 reassignable, not_reassignable, end_of_reassignable, end_of_not_reassignable = G.NonTerminals('REASSIGNABLE NOT_REASSIGNABLE END_OF_REASSIGNABLE END_OF_NOT_REASSIGNABLE')
 function_call, function_name, arguments = G.NonTerminals('FUNCTION_CALL FUNCTION_NAME ARGUMENTS')
 let_expression, declarations, type_annotation, type_name = G.NonTerminals('LET_EXPRESSION DECLARATIONS TYPE_ANNOTATION TYPE_NAME')
@@ -25,6 +25,7 @@ number, boolean, literal, id = G.Terminals('NUMBER BOOLEAN LITERAL ID')
 plus, minus, times, divide, module, power, concat = G.Terminals('PLUS MINUS TIMES DIVIDE MODULE POWER CONCAT')
 comparer = G.Terminal('COMPARER')
 and_, or_, not_ = G.Terminals('AND OR NOT')
+is_, as_ = G.Terminals('IS AS')
 dot, colon, comma, semicolon = G.Terminals('DOT COLON COMMA SEMICOLON')
 lparen, rparen, lbrace, rbrace = G.Terminals('LPAREN RPAREN LBRACE RBRACE')
 lambda_, assign, reassign = G.Terminals('LAMBDA ASSIGN REASSIGN')
@@ -44,7 +45,7 @@ statement %= type_definition, lambda h, s: s[1]
 
 #Standalone Expression
 standalone_expression %= let_ + declarations + in_ + standalone_expression, lambda h, s: LetNode(s[2], s[4])
-standalone_expression %= if_ + if_body + else_ + standalone_expression, lambda h, s: IfNode(s[2].expressions, s[2].conditions, s[4])
+standalone_expression %= if_ + if_body + else_ + standalone_expression, lambda h, s: IfNode(s[2].conditions, s[2].expressions, s[4])
 standalone_expression %= while_ + lparen + expression + rparen + standalone_expression, lambda h, s: WhileNode(s[3], s[5])
 standalone_expression %= for_ + lparen + id + type_annotation + in_ + expression + rparen + standalone_expression, lambda h, s: ForNode(IDNode(s[3]), s[4], s[6], s[8])
 standalone_expression %= expression_block, lambda h, s: s[1]
@@ -66,8 +67,11 @@ disjunction %= conjunction + or_ + disjunction, lambda h, s: OrNode(s[1], s[3])
 conjunction %= proposition, lambda h, s: s[1]
 conjunction %= proposition + and_ + conjunction, lambda h, s: AndNode(s[1], s[3])
 
-proposition %= boolean_term, lambda h, s: s[1]
+proposition %= is_expression, lambda h, s: s[1]
 proposition %= not_ + proposition, lambda h, s: NotNode(s[2])
+
+is_expression %= boolean_term, lambda h, s: s[1]
+is_expression %= boolean_term + is_ + type_name, lambda h, s: IsNode(s[1], s[3])
 
 boolean_term %= concatenation, lambda h, s: s[1]
 boolean_term %= concatenation + comparer + boolean_term, lambda h, s: ComparerNode(s[1], s[3], s[2])
@@ -98,12 +102,15 @@ term %= number, lambda h, s: NumberNode(s[1])
 term %= constant, lambda h, s: NumberNode('3.14') if s[1] == 'PI' else NumberNode('2.72')
 term %= literal, lambda h, s: LiteralNode(s[1])
 term %= boolean, lambda h, s: BooleanNode(s[1])
-term %= reassignable, lambda h, s: s[1]
-term %= not_reassignable, lambda h, s: s[1]
+term %= casted_term, lambda h, s: s[1]
+term %= casted_term + as_ + type_name, lambda h, s: AsNode(s[1], s)
+
+casted_term %= reassignable, lambda h, s: s[1]
+casted_term %= not_reassignable, lambda h, s: s[1]
 
 reassignable %= end_of_reassignable, lambda h, s: s[1]
 reassignable %= self_ + dot + end_of_reassignable, lambda h, s: MemberNode(SelfNode(), s[3])
-reassignable %= lparen + expression + rparen + end_of_reassignable, lambda h, s: MemberNode(s[2], s[3])
+reassignable %= lparen + expression + rparen + end_of_reassignable, lambda h, s: MemberNode(s[2], s[4])
 
 end_of_reassignable %= id, lambda h, s: IDNode(s[1])
 end_of_reassignable %= id + dot + end_of_reassignable, lambda h, s: MemberNode(IDNode(s[1]), s[3])
@@ -112,7 +119,7 @@ end_of_reassignable %= function_call + dot + end_of_reassignable, lambda h, s: M
 not_reassignable %= end_of_not_reassignable, lambda h, s: s[1]
 not_reassignable %= self_ + dot + end_of_not_reassignable, lambda h, s: MemberNode(SelfNode(), s[3])
 not_reassignable %= lparen + expression + rparen, lambda h, s: s[2]
-not_reassignable %= lparen + expression + rparen + end_of_not_reassignable, lambda h, s: MemberNode(s[2], s[3])
+not_reassignable %= lparen + expression + rparen + end_of_not_reassignable, lambda h, s: MemberNode(s[2], s[4])
 
 end_of_not_reassignable %= function_call, lambda h, s: s[1]
 end_of_not_reassignable %= id + dot + end_of_not_reassignable, lambda h, s: MemberNode(s[1], s[3])

@@ -66,6 +66,19 @@ class NotNode(ExpressionNode):
         super().__init__()
         self.node = node
 
+#Is As
+class BinaryExpressionOnTyping(ExpressionNode):
+    def __init__(self, left : ExpressionNode, right : TypeNameNode):
+        super().__init__()
+        self.left = left
+        self.right = right
+
+class IsNode(BinaryExpressionOnTyping):
+    pass
+
+class AsNode(BinaryExpressionOnTyping):
+    pass
+
 #Binary Generic Operations
 class GenericBinaryOperationBetweenExpressions(ExpressionNode):
     def __init__(self, left : ExpressionNode, right : ExpressionNode, operator : str):
