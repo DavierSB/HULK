@@ -6,7 +6,8 @@ from cmp.utils import Token
 from typing import List, Tuple
 
 class Node:
-    pass
+    def name_of_node(self):
+        return type(self).__name__
 
 class ProgramNode(Node):
     def __init__(self, statements, expression):
@@ -39,15 +40,18 @@ class BooleanNode(ConstantValueNode):
     pass
 
 #Names
-class TypeNameNode(Node):
-    def __init__(self, name = None):
-        super().__init__()
-        self.name = name
-
-class FunctionNameNode(Node):
+class NameNode(ConstantValueNode):
     def __init__(self, name):
-        super().__init__()
-        self.name = name
+        self.lex = name
+
+class TypeNameNode(NameNode):
+    def __init__(self, name = None):
+        self.lex = name
+        if self.lex == None:
+            self.lex = 'Object'
+
+class FunctionNameNode(NameNode):
+    pass
 
 #Boolean operations
 class BinaryExpression(ExpressionNode):    
@@ -55,6 +59,7 @@ class BinaryExpression(ExpressionNode):
         super().__init__()
         self.left = left
         self.right = right
+
 class OrNode(BinaryExpression):
     pass
 
@@ -67,7 +72,7 @@ class NotNode(ExpressionNode):
         self.node = node
 
 #Is As
-class BinaryExpressionOnTyping(ExpressionNode):
+class BinaryExpressionOnTyping(BinaryExpression):
     def __init__(self, left : ExpressionNode, right : TypeNameNode):
         super().__init__()
         self.left = left
@@ -102,8 +107,11 @@ class SelfNode(ExpressionNode):
 class MemberNode(BinaryExpression):
     pass
 
-class FunctionCallNode(BinaryExpression):
-    pass
+class FunctionCallNode(ExpressionNode):
+    def __init__(self, name : FunctionNameNode, arguments : List[ExpressionNode]):
+        super().__init__()
+        self.name = name
+        self.arguments = arguments
 
 class DeclarationNode(Node):
     def __init__(self, id : 'IDNode', type_annotation : 'TypeNameNode', expression : ExpressionNode):
@@ -142,6 +150,7 @@ class ForNode(ExpressionNode):
 class NewNode(ExpressionNode):
     def __init__(self, type_name : TypeNameNode, arguments : List[ExpressionNode]):
         super().__init__()
+        self.type_name = type_name
         self.arguments = arguments
 
 class ReassignNode(BinaryExpression):
@@ -152,8 +161,14 @@ class ExpressionBlockNode(ExpressionNode):
         super().__init__()
         self.expressions = expressions
 
+class ParameterNode(Node):
+    def __init__(self, id : IDNode, type_annotation : TypeNameNode):
+        super().__init__()
+        self.id = id
+        self.type_annotation = type_annotation
+
 class FunctionDefinitionNode(StatementNode):
-    def __init__(self, name : FunctionNameNode, parameters : List[Tuple[IDNode, TypeNameNode]], type_annotation : TypeNameNode, expression : ExpressionNode):
+    def __init__(self, name : FunctionNameNode, parameters : List[ParameterNode], type_annotation : TypeNameNode, expression : ExpressionNode):
         super().__init__()
         self.name = name
         self.parameters = parameters
@@ -161,10 +176,11 @@ class FunctionDefinitionNode(StatementNode):
         self.expression = expression
 
 class TypeDefinitionNode(StatementNode):
-    def __init__(self, name : TypeNameNode, own_parameters : List[Tuple[IDNode, TypeNameNode]], parent_name : TypeNameNode | None, parent_arguments : List[ExpressionNode] | None, expression : ExpressionNode):
+    def __init__(self, name : TypeNameNode, own_parameters : List[Tuple[IDNode, TypeNameNode]], parent_name : TypeNameNode | None, parent_arguments : List[ExpressionNode] | None, declarations : Tuple[List[DeclarationNode], List[FunctionDefinitionNode]]):
         super().__init__()
         self.name = name
         self.own_parameters = own_parameters
         self.parent_name = parent_name
         self.parent_arguments = parent_arguments
-        self.expression = expression
+        self.attribute_declarations = declarations[0]
+        self.function_declarations = declarations[1]

@@ -122,7 +122,7 @@ not_reassignable %= lparen + expression + rparen, lambda h, s: s[2]
 not_reassignable %= lparen + expression + rparen + end_of_not_reassignable, lambda h, s: MemberNode(s[2], s[4])
 
 end_of_not_reassignable %= function_call, lambda h, s: s[1]
-end_of_not_reassignable %= id + dot + end_of_not_reassignable, lambda h, s: MemberNode(s[1], s[3])
+end_of_not_reassignable %= id + dot + end_of_not_reassignable, lambda h, s: MemberNode(IDNode(s[1]), s[3])
 end_of_not_reassignable %= function_call + dot + end_of_not_reassignable, lambda h, s: MemberNode(s[1], s[3])
 
 function_call %= function_name + lparen + arguments + rparen, lambda h, s: FunctionCallNode(s[1], s[3])
@@ -140,7 +140,7 @@ arguments %= G.Epsilon, lambda h, s: []
 let_expression %= let_ + declarations + in_ + expression, lambda h, s: LetNode(s[2], s[4])
 
 declarations %= id + type_annotation + assign + expression, lambda h, s: [DeclarationNode(IDNode(s[1]), s[2], s[4])]
-declarations %= id + type_annotation + assign + expression + comma + declarations, lambda h, s: [DeclarationNode(IDNode(s[1]), s[2], s[4])] + s[5]
+declarations %= id + type_annotation + assign + expression + comma + declarations, lambda h, s: [DeclarationNode(IDNode(s[1]), s[2], s[4])] + s[6]
 
 #Type_annotation
 type_annotation %= colon + type_name, lambda h, s: s[2]
@@ -188,15 +188,15 @@ expression_for_inline_function %= instantiation, lambda h, s: s[1]
 expression_for_inline_function %= reassignable + reassign + expression_for_inline_function, lambda h, s: ReassignNode(s[1], s[3])
 
 parameters %= G.Epsilon, lambda h, s: []
-parameters %= id + type_annotation, lambda h, s: [(IDNode(s[1]), s[2])]
-parameters %= id + type_annotation + comma + parameters, lambda h, s: [(IDNode(s[1]), s[2])] + s[4]
+parameters %= id + type_annotation, lambda h, s: [ParameterNode(IDNode(s[1]), s[2])]
+parameters %= id + type_annotation + comma + parameters, lambda h, s: [ParameterNode(IDNode(s[1]), s[2])] + s[4]
 
 #Type definition
 type_definition %= type_ + id + type_block, lambda h, s: TypeDefinitionNode(TypeNameNode(s[2]), [], None, None, s[3])
 type_definition %= type_ + id + lparen + parameters + rparen + type_block, lambda h, s: TypeDefinitionNode(TypeNameNode(s[2]), s[4], None, None, s[6])
-type_definition %= type_ + id + inherits + type_name + type_block, lambda h, s: TypeDefinitionNode(TypeNameNode(s[2]), [], TypeNameNode(s[4]), [], s[5])
-type_definition %= type_ + id + lparen + parameters + rparen + inherits + type_name + type_block, lambda h, s: TypeDefinitionNode(TypeNameNode(s[2]), s[4], TypeNameNode(s[7]), [], s[8])
-type_definition %= type_ + id + lparen + parameters + rparen + inherits + type_name + lparen + arguments + rparen + type_block, lambda h, s: TypeDefinitionNode(TypeNameNode(s[2]), s[4], TypeNameNode(s[7]), s[9], s[11])
+type_definition %= type_ + id + inherits + type_name + type_block, lambda h, s: TypeDefinitionNode(TypeNameNode(s[2]), [], s[4], [], s[5])
+type_definition %= type_ + id + lparen + parameters + rparen + inherits + type_name + type_block, lambda h, s: TypeDefinitionNode(TypeNameNode(s[2]), s[4], s[7], [], s[8])
+type_definition %= type_ + id + lparen + parameters + rparen + inherits + type_name + lparen + arguments + rparen + type_block, lambda h, s: TypeDefinitionNode(TypeNameNode(s[2]), s[4], s[7], s[9], s[11])
 
 type_block %= lbrace + internal_declarations + rbrace, lambda h, s: s[2]
 

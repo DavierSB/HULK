@@ -1,7 +1,7 @@
 scripts = [
     '42;', #0
     'print((((1 + 2) ^ 3) * 4) / 5);', #1
-    'print(sin(30)', #2
+    'print(sin(30));', #2
     '1 + tan(x);', #3
     'let msg = "Hello World" in print(msg);', #4
     'let a = 6, b = a * 7 in print(b);', #5
@@ -64,7 +64,7 @@ scripts = [
     let m = a % b in {
         b := a;
         a := m;
-    }42;
+    };42;
     """,#19
     """
     function tan(x) => sin(x)/cos(x);
