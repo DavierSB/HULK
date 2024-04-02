@@ -33,6 +33,17 @@ class Method:
         return other.name == self.name and \
             other.return_type == self.return_type and \
             other.param_types == self.param_types
+    
+    #I have made this class hasheable, and printable
+    def __hash__(self):
+        return hash(str(self))
+    
+    def __str__(self):
+        str = self.name + ':' + self.return_type.name + '(' + ', '.join([x[0] + ':' + x[1] for x in zip(self.param_names, [t.name for t in self.param_types])]) + ')'
+        return str
+    
+    def __repr__(self):
+        return str(self)
 
 class Type:
     def __init__(self, name:str):

@@ -141,7 +141,7 @@ class FormatVisitor(object):
         if len(node.attribute_declarations):
             attribute_declarations = '\t' * (tabs+1) + 'Attribute Declarations\n' + '\n'.join(self.visit(child, tabs + 1) for child in node.attribute_declarations)
         else:
-            attribute_declarations = 'No Atributte Declaration'
+            attribute_declarations = '\t' * (tabs+1) + 'No Atributte Declaration'
         if len(node.function_declarations):
             function_declarations = '\t' * (tabs+1) + 'Function Declarations\n' + '\n'.join(self.visit(child, tabs + 1) for child in node.function_declarations)
         else:

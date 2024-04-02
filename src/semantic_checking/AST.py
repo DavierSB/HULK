@@ -3,15 +3,16 @@ import sys
 current_dir = os.getcwd()
 sys.path.insert(0, current_dir + '/src')
 from cmp.utils import Token
+#from cmp.ast import Node
 from typing import List, Tuple
 
-class Node:
+class Node():
     def name_of_node(self):
         return type(self).__name__
 
 class ProgramNode(Node):
     def __init__(self, statements, expression):
-        super().__init__()
+        #super().__init__()
         self.statements = statements
         self.expression = expression
 
@@ -48,7 +49,7 @@ class TypeNameNode(NameNode):
     def __init__(self, name = None):
         self.lex = name
         if self.lex == None:
-            self.lex = 'Object'
+            self.lex = 'Any'
 
 class FunctionNameNode(NameNode):
     pass

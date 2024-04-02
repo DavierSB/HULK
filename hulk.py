@@ -9,6 +9,9 @@ from src.parser.grammar import G
 from src.lexer.lexer import lexer
 from src.cmp.evaluation import evaluate_reverse_parse
 from src.semantic_checking.visualization_visitor import FormatVisitor
+from src.semantic_checking.type_collector_visitor import TypeCollectorVisitor
+from src.semantic_checking.type_builder_visitor import TypeBuilderVisitor
+from src.cmp.semantic import Context, Scope 
 from scripts_de_prueba import scripts
 
 parser = SLR1Parser(G)
@@ -25,6 +28,16 @@ def single_test_case(test_case = 1):
     print(code)
     print("The AST is:")
     print(formatter.visit(ast))
+    context = Context()
+    errors = []
+    type_collector = TypeCollectorVisitor(context, errors)
+    type_collector.visit(ast)
+    type_builder = TypeBuilderVisitor(context, errors)
+    type_builder.visit(ast)
+    print(type_builder.context)
+    print(type_builder.global_functions)
+    print(type_builder.errors)
+    input()
 
 def all_test_cases():
     print("A continuacion uno tras otro un bulto de casos de prueba")
@@ -33,5 +46,5 @@ def all_test_cases():
         input("Press Enter for the next Test_Case")
         print("____________________________________________________________________________")
 
-
-all_test_cases()
+single_test_case(21)
+#all_test_cases()
