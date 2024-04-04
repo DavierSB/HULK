@@ -95,5 +95,46 @@ type Knight inherits Person {
 function fib(n) => if (n == 0 | n == 1) 1 else fib(n-1) + fib(n-2);
 function fact(x) => let f = 1 in for (i in range(1, x+1)) f := f * i;
 42;
-""" #22
+""",#22
+"""type A{
+a : Number = 1;
+}
+type B inherits A{
+
+}
+let z = new B() in print(z.c);
+""",#23
+"""type A{
+a : Literal = "boniato";
+}
+type B{
+a : Literal = a @ "casa";
+}
+42;
+""",#24
+"""
+type A{
+f() => 5;
+}
+type B inherits A{
+g() => 6;
+}
+type C inherits B{
+
+}
+let c = new C() in (c.f() + c.g()) as Literal;
+""",#25
+"""
+type A{
+f() => 5;
+}
+type B inherits A{
+g() => 6;
+}
+type C inherits B{
+f() => base() * 2;
+g() => base() /2;
+}
+let c = new C() in (c.f() + c.g()) as Literal;
+"""#26
     ]

@@ -98,13 +98,13 @@ power_term %= monomial + power + power_term, lambda h, s: ArithmeticNode(s[1], s
 monomial %= term, lambda h, s: s[1]
 monomial %= minus + term, lambda h, s: ArithmeticNode(NumberNode('0'), s[3], '-')
 
-term %= number, lambda h, s: NumberNode(s[1])
-term %= constant, lambda h, s: NumberNode('3.14') if s[1] == 'PI' else NumberNode('2.72')
-term %= literal, lambda h, s: LiteralNode(s[1])
-term %= boolean, lambda h, s: BooleanNode(s[1])
 term %= casted_term, lambda h, s: s[1]
-term %= casted_term + as_ + type_name, lambda h, s: AsNode(s[1], s)
+term %= casted_term + as_ + type_name, lambda h, s: AsNode(s[1], s[3])
 
+casted_term %= number, lambda h, s: NumberNode(s[1])
+casted_term %= constant, lambda h, s: NumberNode('3.14') if s[1] == 'PI' else NumberNode('2.72')
+casted_term %= literal, lambda h, s: LiteralNode(s[1])
+casted_term %= boolean, lambda h, s: BooleanNode(s[1])
 casted_term %= reassignable, lambda h, s: s[1]
 casted_term %= not_reassignable, lambda h, s: s[1]
 

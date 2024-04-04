@@ -41,11 +41,24 @@ class TypeBuilderVisitor:
         
         for func in node.function_declarations:
             self.visit(func)
-        constructor_parameters = []
+        
+        constructor_parameter_names = []
+        set_of_parameter_names = set()
+        constructor_parameter_types = []
+        for parameter in node.own_parameters:
+            new_parameter_name = parameter.id.lex
+            if new_parameter_name in set_of_parameter_names:
+                self.errors.append("All parameters must be named different")
+            set_of_parameter_names.add(new_parameter_name)
+            constructor_parameter_names.append(new_parameter_name)
+            try:
+                new_parameter_type = self.context.get_type(parameter.type_annotation.lex)
+            except Exception as ex:
+                self.errors.append(ex)
+                new_parameter_type = ErrorType()
+            constructor_parameter_types.append(new_parameter_type)
         for attr in node.attribute_declarations:
-            self.visit(attr, constructor_parameters)
-        constructor_parameter_names = [p[0] for p in constructor_parameters]
-        constructor_parameter_types = [p[1] for p in constructor_parameters]
+            self.visit(attr)
         self.type_being_build.define_method("__constructor__", constructor_parameter_names, constructor_parameter_types, VoidType)
     
     @visitor.when(FunctionDefinitionNode)
@@ -81,16 +94,14 @@ class TypeBuilderVisitor:
     
     @visitor.when(DeclarationNode)
     def visit(self, node: DeclarationNode, args = None):
-        constructor_parameters = args
         attr_name = node.id.lex
         try:
             attr_type = node.type_annotation.lex
-            attr_type = self.context.types[attr_type]
+            attr_type = self.context.get_type(attr_type)
         except Exception as ex:
             self.errors.append(ex)
             attr_type = ErrorType()
         try:
             self.type_being_build.define_attribute(attr_name, attr_type)
-            constructor_parameters.append((attr_name, attr_type))
         except:
             self.errors.append("Type " + self.type_being_build.name + " already has an attribute with the name " + attr_name)

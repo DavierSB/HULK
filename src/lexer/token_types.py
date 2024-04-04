@@ -37,6 +37,8 @@ reserved_words = {
         'FUNCTION' : 'function',
         'LET' : 'let',
         'IN' : 'in',
+        'IS' : 'is',
+        'AS' : 'as',
         'IF' : 'if',
         'ELSE' : 'else',
         'ELIF' : 'elif',

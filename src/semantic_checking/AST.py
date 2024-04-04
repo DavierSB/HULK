@@ -75,7 +75,7 @@ class NotNode(ExpressionNode):
 #Is As
 class BinaryExpressionOnTyping(BinaryExpression):
     def __init__(self, left : ExpressionNode, right : TypeNameNode):
-        super().__init__()
+        super().__init__(left, right)
         self.left = left
         self.right = right
 
@@ -177,7 +177,7 @@ class FunctionDefinitionNode(StatementNode):
         self.expression = expression
 
 class TypeDefinitionNode(StatementNode):
-    def __init__(self, name : TypeNameNode, own_parameters : List[Tuple[IDNode, TypeNameNode]], parent_name : TypeNameNode | None, parent_arguments : List[ExpressionNode] | None, declarations : Tuple[List[DeclarationNode], List[FunctionDefinitionNode]]):
+    def __init__(self, name : TypeNameNode, own_parameters : List[ParameterNode], parent_name : TypeNameNode | None, parent_arguments : List[ExpressionNode] | None, declarations : Tuple[List[DeclarationNode], List[FunctionDefinitionNode]]):
         super().__init__()
         self.name = name
         self.own_parameters = own_parameters

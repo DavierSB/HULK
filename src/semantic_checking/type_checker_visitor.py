@@ -27,6 +27,7 @@ class TypeCheckerVisitor:
         self.global_functions = global_functions
         self.current_type : Type = None
         self.currently_inside_a_function : bool = False
+        self.base_method : Method = None
         self.errors = errors
 
     @visitor.on('node')
@@ -110,6 +111,11 @@ class TypeCheckerVisitor:
         body_scope = scope.create_child()
         if self.current_type:
             body_scope.define_variable('self', self.current_type)
+            if self.current_type.parent:
+                try:
+                    self.base_method : Method = self.current_type.parent.get_method(node.name.lex)
+                except:
+                    pass
         for parameter_node in node.parameters:
             var_name = parameter_node.id.lex
             var_type = self.context.get_type(parameter_node.type_annotation.lex)
@@ -118,6 +124,7 @@ class TypeCheckerVisitor:
         if not func_inferred_type.conforms_to(func_expected_type):
             self.errors.append(INCOMPATIBLE_TYPES%(func_inferred_type.name, func_expected_type.name))
         self.currently_inside_a_function = False
+        self.base_method = None
 
     #Expressions
     @visitor.when(ExpressionBlockNode)
@@ -212,7 +219,7 @@ class TypeCheckerVisitor:
                 attribute : Attribute = left_side_type.get_attribute(attribute_name)
                 return attribute.type
             except:
-                self.errors.append(ATTRIBUTE_NOT_DEFINED%(left_side_type, attribute_name))
+                self.errors.append(ATTRIBUTE_NOT_DEFINED%(left_side_type.name, attribute_name))
                 return ErrorType()
         self.errors.append(BAD_MEMBER)
     
@@ -252,7 +259,10 @@ class TypeCheckerVisitor:
         received_arguments_types : List[Type] = []
         for argument in node.arguments:
             received_arguments_types.append(self.visit(argument, scope.create_child()))
-        
+
+        if method is None:
+            if node.name.lex == "base":
+                method = self.base_method
         if method is None:
             flag = False
             for func in self.global_functions:

@@ -46,11 +46,11 @@ def single_test_case(test_case = 1, erroneo = False):
 
 def all_test_cases(erroneo = False):
     print("A continuacion uno tras otro un bulto de casos de prueba")
-    for i in range(0, 23):
+    for i in range(0, 27):
         single_test_case(i, erroneo)
         input("Press Enter for the next Test_Case")
         print("____________________________________________________________________________")
 
-#single_test_case(12)
+#single_test_case(26)
 all_test_cases()
 #all_test_cases(True)
