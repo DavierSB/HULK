@@ -11,6 +11,9 @@ class AnyType(Type):
     
     def conforms_to(self, other):
         return True
+    
+    def bypass(self):
+        return True
 
 def initialize_predefined_types(context : Context):
     context.create_type('Object')

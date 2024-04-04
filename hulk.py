@@ -11,13 +11,18 @@ from src.cmp.evaluation import evaluate_reverse_parse
 from src.semantic_checking.visualization_visitor import FormatVisitor
 from src.semantic_checking.type_collector_visitor import TypeCollectorVisitor
 from src.semantic_checking.type_builder_visitor import TypeBuilderVisitor
+from src.semantic_checking.type_checker_visitor import TypeCheckerVisitor
 from src.cmp.semantic import Context, Scope 
 from scripts_de_prueba import scripts
+from scripts_de_prueba_con_errores import scripts_B
 
 parser = SLR1Parser(G)
 
-def single_test_case(test_case = 1):
-    code = scripts[test_case]
+def single_test_case(test_case = 1, erroneo = False):
+    if not erroneo:
+        code = scripts[test_case]
+    else:
+        code = scripts_B[test_case]
     tokens = lexer(code)
     tokens_filtered = [G[token.token_type] for token in tokens]
     tokens_filtered[-1] = G.EOF
@@ -34,17 +39,18 @@ def single_test_case(test_case = 1):
     type_collector.visit(ast)
     type_builder = TypeBuilderVisitor(context, errors)
     type_builder.visit(ast)
-    print(type_builder.context)
-    print(type_builder.global_functions)
-    print(type_builder.errors)
-    input()
+    type_checker = TypeCheckerVisitor(context, type_builder.global_functions, errors)
+    type_checker.visit(ast)
+    print(type_checker.errors)
+    print("LLEGUEEEEE")
 
-def all_test_cases():
+def all_test_cases(erroneo = False):
     print("A continuacion uno tras otro un bulto de casos de prueba")
     for i in range(0, 23):
-        single_test_case(i)
+        single_test_case(i, erroneo)
         input("Press Enter for the next Test_Case")
         print("____________________________________________________________________________")
 
-single_test_case(21)
-#all_test_cases()
+#single_test_case(12)
+all_test_cases()
+#all_test_cases(True)
