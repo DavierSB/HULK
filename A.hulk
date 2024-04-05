@@ -1,0 +1,6 @@
+#Escriba su codigo aqui
+type A{}
+type B inherits A{}
+let k = new A() in
+let j = new B() in
+k := j;

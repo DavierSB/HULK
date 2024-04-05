@@ -1,3 +1,8 @@
+import os
+import sys
+current_dir = os.getcwd()
+sys.path.insert(0, current_dir + '/src')
+from cmp.pycompiler import Terminal
 class ShiftReduceParser:
     SHIFT = 'SHIFT'
     REDUCE = 'REDUCE'
@@ -22,7 +27,10 @@ class ShiftReduceParser:
         
         while True:
             state = stack[-1]
-            lookahead = w[cursor]
+            if isinstance(w[cursor], Terminal):
+                lookahead = w[cursor]
+            else:
+                lookahead = w[cursor].token_type
                 
             # Your code here!!! (Detect error)
             

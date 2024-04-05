@@ -26,7 +26,8 @@ tokens = {
     'RPAREN' : '\)',
     'LBRACE' : '\{',
     'RBRACE' : '\}',
-    'IGNORE' : '(\ |' + line_jump + ')(\ |' + line_jump + ')*'
+    'IGNORE' : '(\ |' + line_jump + ')(\ |' + line_jump + ')*',
+    'COMMENT' : '#[^ + ' + line_jump + ']*' + line_jump
     }
 
 reserved_words = {

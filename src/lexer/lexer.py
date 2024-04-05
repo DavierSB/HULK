@@ -75,10 +75,14 @@ class Lexer:
     
     def __call__(self, text):
         tokens = [ Token(lex, ttype) for lex, ttype in self._tokenize(text) ]
+        line = 1
         for token in tokens:
             if token.lex in self.reserved_words:
                 token.token_type = self.reserved_words[token.lex]
-        return [token for token in tokens if token.token_type != "IGNORE"]
+            token.line = line
+            if token.lex.find("\n") >= 0:
+                line += 1
+        return [token for token in tokens if token.token_type not in ["IGNORE", "COMMENT"]]
 
 all_tokens = tokens
 lexer = Lexer(tokens, reserved_words, G.EOF)

@@ -30,4 +30,4 @@ class TypeCollectorVisitor:
         try:
             self.context.create_type(type_name)
         except SemanticError as ex:
-            self.errors.append(ex.text)
+            self.errors.append((node.line, ex.text))

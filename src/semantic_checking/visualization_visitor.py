@@ -22,6 +22,7 @@ class FormatVisitor(object):
     def visit(self, node, tabs = 0):
         return '\t' * tabs + f'\\__' + node.name_of_node() + ' : ' + node.lex
     
+
     @visitor.when(SelfNode)
     def visit(self, node, tabs = 0):
         return '\t' * tabs + f'\\__' + node.name_of_node()

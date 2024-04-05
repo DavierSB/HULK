@@ -46,6 +46,24 @@ class TypeCheckerVisitor:
     @visitor.when(TypeDefinitionNode)
     def visit(self, node : TypeDefinitionNode, scope : Scope, args = None):
         print("Visited Type Definition Node")
+        #Primero que todo verificamos que se pasen los argumentos correctos al constructor del padre
+        if node.parent_name:
+            received_parent_arguments = []
+            for argument in node.parent_arguments:
+                received_parent_arguments.append(self.visit(argument, scope.create_child()))
+            try:
+                parent : Type = self.context.get_type(node.parent_name.lex)
+                parent_constructor : Method = parent.get_method('__constructor__')
+                if len(received_parent_arguments) != len(parent_constructor.param_names):
+                    self.errors.append((node.line, BAD_CONSTRUCTOR_CALL%(parent.name, str(len(parent_constructor.param_names)), str(len(received_parent_arguments)))))
+                for i in range(len(received_parent_arguments)):
+                    if not received_parent_arguments[i].conforms_to(parent_constructor.param_types[i]):
+                        self.errors.append((node.line, INCOMPATIBLE_TYPES%(received_parent_arguments[i], parent_constructor.param_types[i])))
+            except:
+                #LLegamos aqui solo en los casos en los que el padre es un tipo que no ha sido
+                #definido. Este error debio ser reportado en el TypeBuilder. Por tanto, PASS
+                pass
+
         self.current_type : Type = self.context.get_type(node.name.lex)
         scope_for_attribute_declarations = scope.create_child()
         constructor : Method = self.current_type.get_method('__constructor__')
@@ -60,20 +78,20 @@ class TypeCheckerVisitor:
         self.current_type = None
     
     @visitor.when(DeclarationNode)
-    def visit(self, node : DeclarationNode, scope : Scope, args : Node = None):
+    def visit(self, node : DeclarationNode, scope : Scope, args : bool = False):
         print("Visited Declaration Node")
-        inside_a_let = isinstance(args, LetNode)
+        inside_a_let = args
         var_name = node.id.lex
         if scope.is_local(var_name):
             if inside_a_let:
-                self.errors.append(LET_VARIABLE_ALREADY_DEFINED%(var_name, self.current_method.name))
+                self.errors.append((node.line, LET_VARIABLE_ALREADY_DEFINED%(var_name, self.current_method.name)))
         if inside_a_let:
             var_expected_type = self.context.get_type(node.type_annotation.lex)
         else:
             var_expected_type = self.current_type.get_attribute(var_name).type
         var_inferred_type = self.visit(node.expression, scope.create_child())
         if not var_inferred_type.conforms_to(var_expected_type):
-            self.errors.append(INCOMPATIBLE_TYPES%(var_inferred_type.name, var_expected_type.name))
+            self.errors.append((node.line, INCOMPATIBLE_TYPES%(var_inferred_type.name, var_expected_type.name)))
         if inside_a_let:
             scope.define_variable(var_name, var_inferred_type)
         return var_inferred_type
@@ -84,23 +102,23 @@ class TypeCheckerVisitor:
         #SOLO ACEPTO REASIGNACIONES QUE MANTENGAN EL TIPO ORIGINAL DE LA VARIABLE
         if isinstance(node.left, MemberNode):
             if isinstance(node.left.right, FunctionCallNode):
-                self.errors.append("Functions cannot be redefined")
+                self.errors.append((node.line, "Functions cannot be redefined"))
                 return ErrorType()
             attribute_type = self.visit(node.left, scope.create_child())
             inferred_type = self.visit(node.right, scope.create_child())
             if not inferred_type.conforms_to(attribute_type):
-                self.errors.append(INCOMPATIBLE_TYPES%(inferred_type.name, attribute_type.name))
+                self.errors.append((node.line, INCOMPATIBLE_TYPES%(inferred_type.name, attribute_type.name)))
             return inferred_type
         if isinstance(node.left, IDNode):
             var_name = node.left.lex
             if not scope.is_defined(var_name):
-                self.errors.append(VARIABLE_NOT_DEFINED%(var_name))
+                self.errors.append((node.line, VARIABLE_NOT_DEFINED%(var_name)))
             var_type = scope.find_variable(var_name).type
             inferred_type = self.visit(node.right, scope.create_child())
             if not inferred_type.conforms_to(var_type):
-                self.errors.append(INCOMPATIBLE_TYPES%(inferred_type.name, var_type.name))
+                self.errors.append((node.line, INCOMPATIBLE_TYPES%(inferred_type.name, var_type.name)))
             return inferred_type
-        self.errors.append("Can only reassign variables or attributes")
+        self.errors.append((node.line, "Can only reassign variables or attributes"))
         return ErrorType()
     
     @visitor.when(FunctionDefinitionNode)
@@ -122,7 +140,7 @@ class TypeCheckerVisitor:
             body_scope.define_variable(var_name, var_type)
         func_inferred_type = self.visit(node.expression, body_scope)
         if not func_inferred_type.conforms_to(func_expected_type):
-            self.errors.append(INCOMPATIBLE_TYPES%(func_inferred_type.name, func_expected_type.name))
+            self.errors.append((node.line, INCOMPATIBLE_TYPES%(func_inferred_type.name, func_expected_type.name)))
         self.currently_inside_a_function = False
         self.base_method = None
 
@@ -140,7 +158,7 @@ class TypeCheckerVisitor:
         print("Visited Let Node")
         body_scope = scope.create_child()
         for declaration in node.declarations:
-            self.visit(declaration, body_scope, node)
+            self.visit(declaration, body_scope, True)
         return self.visit(node.expression, body_scope)
     
     @visitor.when(IfNode)
@@ -150,7 +168,7 @@ class TypeCheckerVisitor:
         for condition in node.conditions:
             condition_type = self.visit(condition, scope.create_child())
             if not condition_type.conforms_to(boolean_type):
-                self.errors.append(INCOMPATIBLE_TYPES%(condition_type.name, boolean_type.name))
+                self.errors.append((node.line, INCOMPATIBLE_TYPES%(condition_type.name, boolean_type.name)))
         for expression in node.expressions:
             self.visit(expression, scope.create_child())
         return self.context.get_type('Object')
@@ -176,7 +194,7 @@ class TypeCheckerVisitor:
         boolean_type = self.context.get_type('Boolean')
         condition_type = self.visit(node.condition, scope.create_child())
         if not condition_type.conforms_to(boolean_type):
-            self.errors.append(INCOMPATIBLE_TYPES%(condition_type.name, boolean_type.name))
+            self.errors.append((node.line, INCOMPATIBLE_TYPES%(condition_type.name, boolean_type.name)))
         return self.visit(node.expression, scope.create_child())
     
     @visitor.when(NewNode)
@@ -189,13 +207,13 @@ class TypeCheckerVisitor:
             type_to_instantiate : Type = self.context.get_type(node.type_name.lex)
             constructor : Method = type_to_instantiate.get_method('__constructor__')
             if len(received_arguments_types) != len(constructor.param_names):
-                self.errors.append(BAD_CONSTRUCTOR_CALL%(type_to_instantiate.name, str(len(constructor.param_names)), str(len(received_arguments_types))))
+                self.errors.append((node.line, BAD_CONSTRUCTOR_CALL%(type_to_instantiate.name, str(len(constructor.param_names)), str(len(received_arguments_types)))))
             for i in range(len(received_arguments_types)):
                 if not received_arguments_types[i].conforms_to(constructor.param_types[i]):
-                    self.errors.append(INCOMPATIBLE_TYPES%(received_arguments_types[i], constructor.param_types[i]))
+                    self.errors.append((node.line, INCOMPATIBLE_TYPES%(received_arguments_types[i], constructor.param_types[i])))
             return type_to_instantiate
         except Exception as ex:
-            self.errors.append(ex)
+            self.errors.append((node.line, ex.text))
             return ErrorType()
     
     @visitor.when(MemberNode)
@@ -203,7 +221,7 @@ class TypeCheckerVisitor:
         print("Visited Member Node")
         if isinstance(node.left, SelfNode):
             if not self.currently_inside_a_function:
-                self.errors.append(SELF_ACCESOR_OUT_OF_A_FUNCTION)
+                self.errors.append((node.line, SELF_ACCESOR_OUT_OF_A_FUNCTION))
         left_side_type : Type = self.visit(node.left, scope.create_child())
         if isinstance(node.right, FunctionCallNode):
             try:
@@ -211,7 +229,7 @@ class TypeCheckerVisitor:
                 function_called : Method = left_side_type.get_method(function_name)
                 return self.visit(node.right, scope.create_child(), function_called)
             except:
-                self.errors.append(FUNCTION_NOT_DEFINED_IN_TYPE%(left_side_type.name, function_name))
+                self.errors.append((node.line, FUNCTION_NOT_DEFINED_IN_TYPE%(left_side_type.name, function_name)))
                 return ErrorType()
         if isinstance(node.right, IDNode):
             try:
@@ -219,9 +237,9 @@ class TypeCheckerVisitor:
                 attribute : Attribute = left_side_type.get_attribute(attribute_name)
                 return attribute.type
             except:
-                self.errors.append(ATTRIBUTE_NOT_DEFINED%(left_side_type.name, attribute_name))
+                self.errors.append((node.line, ATTRIBUTE_NOT_DEFINED%(left_side_type.name, attribute_name)))
                 return ErrorType()
-        self.errors.append(BAD_MEMBER)
+        self.errors.append((node.line, BAD_MEMBER))
     
     #Constant Values
     @visitor.when(IDNode)
@@ -230,7 +248,7 @@ class TypeCheckerVisitor:
         try:
             return scope.find_variable(node.lex).type
         except:
-            self.errors.append(VARIABLE_NOT_DEFINED%(node.lex))
+            self.errors.append((node.line, VARIABLE_NOT_DEFINED%(node.lex)))
             return ErrorType()
     
     @visitor.when(SelfNode)
@@ -276,12 +294,12 @@ class TypeCheckerVisitor:
                     method = func
                     break
         if method is None: #still
-            self.errors.append(FUNCTION_NOT_DEFINED_GLOBALLY%(node.name.lex))
+            self.errors.append((node.line, FUNCTION_NOT_DEFINED_GLOBALLY%(node.name.lex)))
             return ErrorType()
         
         for i in range(len(received_arguments_types)):
             if not received_arguments_types[i].conforms_to(method.param_types[i]):
-                self.errors.append(INCOMPATIBLE_TYPES%(received_arguments_types[i], method.param_types[i]))
+                self.errors.append((node.line, INCOMPATIBLE_TYPES%(received_arguments_types[i], method.param_types[i])))
         
         return method.return_type
 
@@ -293,7 +311,7 @@ class TypeCheckerVisitor:
         right_inferred_type : Type = self.visit(node.right, scope.create_child())
         boolean_type = self.context.get_type('Boolean')
         if not(left_inferred_type.conforms_to(boolean_type) and right_inferred_type.conforms_to(boolean_type)):
-            self.errors.append(INVALID_OPERATION%('Or', left_inferred_type.name, right_inferred_type.name))
+            self.errors.append((node.line, INVALID_OPERATION%('Or', left_inferred_type.name, right_inferred_type.name)))
         return boolean_type
     
     @visitor.when(AndNode)
@@ -303,7 +321,7 @@ class TypeCheckerVisitor:
         right_inferred_type : Type = self.visit(node.right, scope.create_child())
         boolean_type = self.context.get_type('Boolean')
         if not(left_inferred_type.conforms_to(boolean_type) and right_inferred_type.conforms_to(boolean_type)):
-            self.errors.append(INVALID_OPERATION%('And', left_inferred_type.name, right_inferred_type.name))
+            self.errors.append((node.line, INVALID_OPERATION%('And', left_inferred_type.name, right_inferred_type.name)))
         return boolean_type
     
     @visitor.when(NotNode)
@@ -312,7 +330,7 @@ class TypeCheckerVisitor:
         node_inferred_type : Type = self.visit(node.node, scope.create_child())
         boolean_type = self.context.get_type('Boolean')
         if not(node_inferred_type.conforms_to(boolean_type)):
-            self.errors.append(INVALID_OPERATION%('Not', node_inferred_type.name))
+            self.errors.append((node.line, INVALID_OPERATION%('Not', node_inferred_type.name)))
         return self.context.get_type('Boolean')
     
     @visitor.when(ComparerNode)
@@ -324,7 +342,7 @@ class TypeCheckerVisitor:
         number_type = self.context.get_type('Number')
         if node.operator in [">", ">=", "<", "<="]:
             if not(left_inferred_type.conforms_to(number_type) and right_inferred_type.conforms_to(number_type)):
-                self.errors.append(INVALID_OPERATION%(node.operator, left_inferred_type.name, right_inferred_type.name))
+                self.errors.append((node.line, INVALID_OPERATION%(node.operator, left_inferred_type.name, right_inferred_type.name)))
         return boolean_type
     
     @visitor.when(ArithmeticNode)
@@ -334,7 +352,7 @@ class TypeCheckerVisitor:
         right_inferred_type : Type = self.visit(node.right, scope.create_child())
         number_type = self.context.get_type('Number')
         if not(left_inferred_type.conforms_to(number_type) and right_inferred_type.conforms_to(number_type)):
-            self.errors.append(INVALID_OPERATION%(node.operator, left_inferred_type.name, right_inferred_type.name))
+            self.errors.append((node.line, INVALID_OPERATION%(node.operator, left_inferred_type.name, right_inferred_type.name)))
         return number_type
     
     @visitor.when(ConcatNode)
@@ -346,7 +364,7 @@ class TypeCheckerVisitor:
         boolean_type = self.context.get_type('Boolean')
         number_type = self.context.get_type('Number')
         if (not (left_inferred_type.name in ['Number', 'Literal', 'Boolean'])) or (not (right_inferred_type.name in ['Number', 'Literal', 'Boolean'])):
-            self.errors.append(INVALID_OPERATION%(node.operator, left_inferred_type.name, right_inferred_type.name))
+            self.errors.append((node.line, INVALID_OPERATION%(node.operator, left_inferred_type.name, right_inferred_type.name)))
         return literal_type
     
     @visitor.when(IsNode)
@@ -362,4 +380,4 @@ class TypeCheckerVisitor:
         return_type : Type = self.context.get_type(node.right.lex)
         if left_inferred_type.conforms_to(return_type):
             return return_type
-        self.errors.append(INCOMPATIBLE_TYPES%(left_inferred_type, return_type))
+        self.errors.append((node.line, INCOMPATIBLE_TYPES%(left_inferred_type, return_type)))

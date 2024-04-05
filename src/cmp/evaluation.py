@@ -5,7 +5,7 @@ current_dir = os.getcwd()
 sys.path.insert(0, current_dir + '/src/parser')
 from parser.shift_reduce_parser import ShiftReduceParser
 
-def evaluate_reverse_parse(right_parse, operations, tokens):
+def evaluate_reverse_parse(right_parse, operations, tokens, synthetize_pure_tokens = False):
     if not right_parse or not operations or not tokens:
         return
 
@@ -15,7 +15,7 @@ def evaluate_reverse_parse(right_parse, operations, tokens):
     for operation in operations:
         if operation == ShiftReduceParser.SHIFT:
             token = next(tokens)
-            stack.append(token.lex)
+            stack.append(token if synthetize_pure_tokens else token.lex)
         elif operation == ShiftReduceParser.REDUCE:
             production = next(right_parse)
             head, body = production
