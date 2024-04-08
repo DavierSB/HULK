@@ -1,0 +1,48 @@
+type Point(x, y)
+{
+    x = x;
+    y = y;
+
+    getX() => self.x;
+    setX(x) => self.x := x;
+
+    getY() => self.y;
+    setY(y) => self.y := y;
+}
+type PolarPoint(z) inherits Point(0, 0)
+{
+    z = z;
+
+    getZ() => self.z;
+    setZ(z) => self.z := z;
+}
+let p = new PolarPoint(3) in 
+{
+    print(p.getX());
+    print(p.getZ());
+    p.setX(5);
+    print(p.getX());
+}
+
+
+
+
+
+type A
+{
+    super() => 7;
+}
+type B inherits A
+{
+    super() => 6;
+}
+type C inherits A
+{
+    super() => 5;
+}
+let x : A = if (rand() < 0.5) new B() else new C()
+in
+if (x is B){
+x := x as B;
+print(x.super());}
+else print("No esta vez");

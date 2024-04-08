@@ -57,9 +57,12 @@ class TypeBuilderVisitor:
                 self.errors.append((node.line, ex.text))
                 new_parameter_type = ErrorType()
             constructor_parameter_types.append(new_parameter_type)
+        constructor_body = ExpressionBlockNode([], -1)
+        constructor_body.parent_arguments = node.parent_arguments #El parche para que entrara la herencia en el interpreter
         for attr in node.attribute_declarations:
             self.visit(attr)
-        self.type_being_build.define_method("__constructor__", constructor_parameter_names, constructor_parameter_types, VoidType())
+            constructor_body.expressions.append(attr)
+        self.type_being_build.define_method("__constructor__", constructor_parameter_names, constructor_parameter_types, self.type_being_build, constructor_body)
     
     @visitor.when(FunctionDefinitionNode)
     def visit(self, node : FunctionDefinitionNode, args = None):
@@ -81,14 +84,14 @@ class TypeBuilderVisitor:
             return_type = ErrorType()
 
         if not self.type_being_build:
-            method = Method(node.name.lex, parameter_names, parameter_types, return_type)
+            method = Method(node.name.lex, parameter_names, parameter_types, return_type, node.expression)
             if not method in self.global_functions:
                 self.global_functions.add(method)
             else:
                 self.errors.append((node.line, "Method " + node.name.lex + " with such parameters was already declared"))
         else:
             try:
-                self.type_being_build.define_method(node.name.lex, parameter_names, parameter_types, return_type)
+                self.type_being_build.define_method(node.name.lex, parameter_names, parameter_types, return_type, node.expression)
             except:
                 self.errors.append((node.line, "Type " + self.type_being_build.name + " already has a definition for " + node.name.lex + " with such parameters"))
     

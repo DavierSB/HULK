@@ -42,6 +42,9 @@ class LiteralNode(ConstantValueNode):
 class BooleanNode(ConstantValueNode):
     pass
 
+class PredefinedFunctionNode(ConstantValueNode):
+    pass
+
 #Names
 class NameNode(ConstantValueNode):
     def __init__(self, name, line):

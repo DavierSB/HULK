@@ -12,6 +12,7 @@ from src.semantic_checking.visualization_visitor import FormatVisitor
 from src.semantic_checking.type_collector_visitor import TypeCollectorVisitor
 from src.semantic_checking.type_builder_visitor import TypeBuilderVisitor
 from src.semantic_checking.type_checker_visitor import TypeCheckerVisitor
+from src.interpreter.interpreter import Interpreter_Visitor
 from src.cmp.semantic import Context, Scope
 
 parser = SLR1Parser(G)
@@ -40,5 +41,12 @@ errors.sort()
 errors = [("ERROR in line " + str(tpl[0]) + " " + tpl[1]) for tpl in errors]
 print("The context is:")
 print(type_checker.context)
-print("The errors are:")
+print("The global functions are:")
+print(type_checker.global_functions)
+print("The compilation errors are:")
 print(errors)
+if len(errors) == 0:
+    intepreter = Interpreter_Visitor(type_checker.context, type_checker.global_functions)
+    intepreter.visit(ast)
+print("LLEGUEEEEE")
+input()

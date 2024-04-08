@@ -19,11 +19,12 @@ class Attribute:
         return str(self)
 
 class Method:
-    def __init__(self, name, param_names, params_types, return_type):
+    def __init__(self, name, param_names, params_types, return_type, expression = None):
         self.name = name
         self.param_names = param_names
         self.param_types = params_types
         self.return_type = return_type
+        self.expression = expression
 
     def __str__(self):
         params = ', '.join(f'{n}:{t.name}' for n,t in zip(self.param_names, self.param_types))
@@ -89,11 +90,11 @@ class Type:
             except SemanticError:
                 raise SemanticError(f'Method "{name}" is not defined in {self.name}.')
 
-    def define_method(self, name:str, param_names:list, param_types:list, return_type):
+    def define_method(self, name:str, param_names:list, param_types:list, return_type, expression = None):
         if name in (method.name for method in self.methods):
             raise SemanticError(f'Method "{name}" already defined in {self.name}')
 
-        method = Method(name, param_names, param_types, return_type)
+        method = Method(name, param_names, param_types, return_type, expression)
         self.methods.append(method)
         return method
 
@@ -149,7 +150,7 @@ class VoidType(Type):
         Type.__init__(self, '<void>')
 
     def conforms_to(self, other):
-        raise Exception('Invalid type: void type.')
+        return self == other #Cambie esto
 
     def bypass(self):
         return True
@@ -179,6 +180,13 @@ class Context:
             return self.types[name]
         except KeyError:
             raise SemanticError(f'Type "{name}" is not defined.')
+    
+    def lowest_common_ancestor(self, left_type : Type, right_type : Type):
+        if left_type.conforms_to(right_type):
+            return right_type
+        if right_type.conforms_to(left_type):
+            return left_type
+        return self.lowest_common_ancestor(left_type, right_type.parent)
 
     def __str__(self):
         return '{\n\t' + '\n\t'.join(y for x in self.types.values() for y in str(x).split('\n')) + '\n}'
@@ -187,9 +195,10 @@ class Context:
         return str(self)
 
 class VariableInfo:
-    def __init__(self, name, vtype):
+    def __init__(self, name, vtype, value = None):
         self.name = name
         self.type = vtype
+        self.value = value
 
 class Scope:
     def __init__(self, parent=None):
@@ -206,8 +215,8 @@ class Scope:
         self.children.append(child)
         return child
 
-    def define_variable(self, vname, vtype):
-        info = VariableInfo(vname, vtype)
+    def define_variable(self, vname, vtype, value = None):
+        info = VariableInfo(vname, vtype, value)
         self.locals.append(info)
         return info
 

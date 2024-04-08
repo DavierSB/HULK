@@ -2,7 +2,9 @@ import os
 import sys
 current_dir = os.getcwd()
 sys.path.insert(0, current_dir + '/src')
+sys.path.insert(0, current_dir + '/src/semantic_checking')
 from cmp.semantic import Context, Method, VoidType, ErrorType, Type
+from semantic_checking.AST import PredefinedFunctionNode
 from typing import Set
 
 class AnyType(Type):
@@ -33,12 +35,12 @@ def initialize_predefined_functions(context : Context, global_functions : Set[Me
     number_type = context.types['Number']
     void_type = context.types['<void>']
     predefined_methods = [
-        Method('print', ['value'], [object_type], void_type),
-        Method('sin', ['value'], [number_type], number_type),
-        Method('cos', ['value'], [number_type], number_type),
-        Method('log', ['value'], [number_type], number_type),
-        Method('sqrt', ['value'], [number_type], number_type),
-        Method('exp', ['value'], [number_type], number_type),
-        Method('rand', [], [], number_type)
+        Method('print', ['value'], [object_type], void_type, PredefinedFunctionNode('print', -1)),
+        Method('sin', ['value'], [number_type], number_type, PredefinedFunctionNode('sin', -1)),
+        Method('cos', ['value'], [number_type], number_type, PredefinedFunctionNode('cos', -1)),
+        Method('log', ['value'], [number_type], number_type, PredefinedFunctionNode('log', -1)),
+        Method('sqrt', ['value'], [number_type], number_type, PredefinedFunctionNode('sqrt', -1)),
+        Method('exp', ['value'], [number_type], number_type, PredefinedFunctionNode('exp', -1)),
+        Method('rand', [], [], number_type, PredefinedFunctionNode('rand', -1))
     ]
     global_functions.update(set(predefined_methods))
