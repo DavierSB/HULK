@@ -145,3 +145,35 @@ type Knight inherits Person{
 }
 let p = new Knight("Phil", "Collins") in
 print(p.name());
+
+
+
+type A(x : Number)
+{
+    x = x;
+    super() => 7;
+}
+type B inherits A
+{
+    super() => base() + 3 + self.x;
+}
+type C inherits B
+{
+    z = 100;
+    super() => base() + base() + self.z;
+}
+type D inherits C
+{
+    super() => base() + base();
+}
+let d = new D(30) in print(d.super());
+
+
+
+type A(x, y)
+{
+    self.x = x;
+    self.y = y;
+    suma() => x + y;
+}
+let g = new A("Hola", "Mundo") in print(g);

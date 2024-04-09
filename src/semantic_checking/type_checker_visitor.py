@@ -233,6 +233,9 @@ class TypeCheckerVisitor:
         try:
             type_to_instantiate : Type = self.context.get_type(node.type_name.lex)
             constructor : Method = type_to_instantiate.get_method('__constructor__')
+            if len(received_arguments_types) != len(constructor.param_names):
+                self.errors.append((node.line, BAD_CONSTRUCTOR_CALL%(type_to_instantiate, len(constructor.param_names), len(received_arguments_types))))
+                return ErrorType()
             for i in range(len(received_arguments_types)):
                 if not received_arguments_types[i].conforms_to(constructor.param_types[i]):
                     self.errors.append((node.line, INCOMPATIBLE_TYPES%(received_arguments_types[i], constructor.param_types[i])))
@@ -355,7 +358,6 @@ class TypeCheckerVisitor:
                     method = func
                     break
         if method is None: #still
-            input()
             self.errors.append((node.line, FUNCTION_NOT_DEFINED_GLOBALLY%(node.name.lex)))
             return ErrorType()
         
@@ -467,3 +469,7 @@ class TypeCheckerVisitor:
         if node.lex == 'print':
             return VoidType()
         return self.context.get_type('Number')
+    
+    @visitor.when(VoidNode)
+    def visit(self, node : VoidNode, scope : Scope, args = Node):
+        return VoidType()

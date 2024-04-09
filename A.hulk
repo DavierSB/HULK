@@ -1,18 +1,8 @@
 #Escriba su codigo aqui
-type A
-{
-    super() => 7;
-}
-type B inherits A
-{
-    super() => base();
-}
-type C inherits B
-{
-    super() => base() + base();
-}
-type D inherits C
-{
-    super() => base() + base();
-}
-let d = new D() in print(d.super());
+
+type A{}
+type B{}
+type AA inherits A{msg = "Hola";}
+type BB inherits B{msg = "Adios";}
+let a = if (rand() < 0.5) new AA() else new BB()
+in print(a.msg());

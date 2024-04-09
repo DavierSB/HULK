@@ -54,6 +54,7 @@ class TypeBuilderVisitor:
         constructor_parameter_names = []
         set_of_parameter_names = set()
         constructor_parameter_types = []
+        node.parent_arguments = []
         
         if node.parent_name:
             parent_name = node.parent_name.lex
@@ -64,7 +65,6 @@ class TypeBuilderVisitor:
                     parent_constructor : Method = parent.get_method('__constructor__')
                     default_parent_arguments = False
                     if not node.parent_arguments:
-                        node.parent_arguments = []
                         default_parent_arguments = True
                     for name in parent_constructor.param_names:
                         constructor_parameter_names.append(name)
@@ -78,6 +78,8 @@ class TypeBuilderVisitor:
                     pass
             except Exception as ex:
                 self.errors.append((node.line, "The type " + parent_name + " is not defined"))
+        else:
+            self.type_being_build.set_parent(self.context.get_type('Object'))
 
         for func in node.function_declarations:
             self.visit(func)

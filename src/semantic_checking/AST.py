@@ -190,3 +190,6 @@ class TypeDefinitionNode(StatementNode):
         self.parent_arguments = parent_arguments
         self.attribute_declarations = declarations[0]
         self.function_declarations = declarations[1]
+
+class VoidNode(Node):
+    pass

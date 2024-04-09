@@ -3,8 +3,8 @@ import sys
 current_dir = os.getcwd()
 sys.path.insert(0, current_dir + '/src')
 sys.path.insert(0, current_dir + '/src/semantic_checking')
-from cmp.semantic import Context, Method, VoidType, ErrorType, AnyType
-from semantic_checking.AST import PredefinedFunctionNode
+from cmp.semantic import Context, Method, VoidType, ErrorType, AnyType, Type
+from semantic_checking.AST import PredefinedFunctionNode, VoidNode, ExpressionBlockNode
 from typing import Set
 
 def initialize_predefined_types(context : Context):
@@ -16,7 +16,8 @@ def initialize_predefined_types(context : Context):
     context.types['Any'] = AnyType()
     context.types['<void>'] = VoidType()
     context.types['error'] = ErrorType()
-    object_type = context.types['Object']
+    object_type : Type = context.types['Object']
+    object_type.define_method('__constructor__', [], [], VoidType(), ExpressionBlockNode([], -1))
     constant_type = context.types['Constant']
     constant_type.set_parent(object_type)
     context.types['Number'].set_parent(constant_type)
