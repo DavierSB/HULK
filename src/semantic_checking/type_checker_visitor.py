@@ -324,6 +324,7 @@ class TypeCheckerVisitor:
         print("Visit FunctionCallNode")
         method = args #Si es None, quiere decir que la funcion que llaman es global
         received_arguments_types : List[Type] = []
+        previous_base_method = self.base_method
         for argument in node.arguments:
             received_arguments_types.append(self.visit(argument, scope.create_child()))
 
@@ -334,6 +335,10 @@ class TypeCheckerVisitor:
                     method = node.base_method
                 else:
                     node.base_method = self.base_method
+                    try:
+                        self.base_method = self.current_type.parent.base_method
+                    except:
+                        self.base_method = None
                     #Esto no es mas que un parche, porque el problema real es que se visite dos veces este nodo,
                     #eso ta flojo
 
@@ -364,6 +369,7 @@ class TypeCheckerVisitor:
         self.currently_inside_a_function = True
         inferred_type = self.visit(method.expression, scope.create_child())
         self.currently_inside_a_function = previous_currently_inside_a_function
+        self.base_method = previous_base_method
         if not inferred_type.conforms_to(method.return_type):
             self.errors.append((node.line, INCOMPATIBLE_TYPES%(inferred_type, method.return_type)))
             return ErrorType()

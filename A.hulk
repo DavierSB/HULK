@@ -5,15 +5,14 @@ type A
 }
 type B inherits A
 {
-    super() => 6;
+    super() => base();
 }
-type C inherits A
+type C inherits B
 {
-    super() => 5;
+    super() => base() + base();
 }
-let x : A = if (rand() < 0.5) new B() else new C()
-in
-if (x is B){
-x := x as B;
-print(x.super());}
-else print("No esta vez");
+type D inherits C
+{
+    super() => base() + base();
+}
+let d = new D() in print(d.super());
