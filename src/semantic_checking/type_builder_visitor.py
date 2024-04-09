@@ -23,28 +23,65 @@ class TypeBuilderVisitor:
 
     @visitor.when(ProgramNode)
     def visit(self, node : ProgramNode, args = None):
-        for statement in node.statements:
+        for statement in [stmnt for stmnt in node.statements if isinstance(stmnt, FunctionDefinitionNode)]:
             self.visit(statement)
-            self.type_being_build = None
+        builded_types_names = set()
+        n = len(self.context.types)
+        change = True
+        while change and (n >= 0):
+            change = False
+            n -= 1
+            for statement in [stmnt for stmnt in node.statements if isinstance(stmnt, TypeDefinitionNode)]:
+                if not statement.name.lex in builded_types_names:
+                    if (not statement.parent_name) or statement.parent_name.lex in builded_types_names:
+                        change = True
+                        self.visit(statement)
+                        builded_types_names.add(statement.name.lex)
+                        self.type_being_build = None
+        if not n:
+            n_errors = len(self.errors)
+            for statement in [stmnt for stmnt in node.statements if isinstance(stmnt, TypeDefinitionNode)]:
+                if not statement.name.lex in builded_types_names:
+                    self.visit(statement)
+            if n_errors == len(self.errors):
+                self.errors.append(1, "THERE ARE CIRCULAR DEPENDENCIES")
     
     @visitor.when(TypeDefinitionNode)
     def visit(self, node : TypeDefinitionNode, args = None):
         type_name = node.name.lex
         self.type_being_build : Type = self.context.types[type_name]
-        if node.parent_name:
-            parent_name = node.parent_name.lex
-            try:
-                parent = self.context.get_type(parent_name)
-                self.type_being_build.set_parent(parent)
-            except Exception as ex:
-                self.errors.append((node.line, "The type " + parent_name + " is not defined"))
-        
-        for func in node.function_declarations:
-            self.visit(func)
         
         constructor_parameter_names = []
         set_of_parameter_names = set()
         constructor_parameter_types = []
+        
+        if node.parent_name:
+            parent_name = node.parent_name.lex
+            try:
+                parent : Type = self.context.get_type(parent_name)
+                self.type_being_build.set_parent(parent)
+                try:
+                    parent_constructor : Method = parent.get_method('__constructor__')
+                    default_parent_arguments = False
+                    if not node.parent_arguments:
+                        node.parent_arguments = []
+                        default_parent_arguments = True
+                    for name in parent_constructor.param_names:
+                        constructor_parameter_names.append(name)
+                        set_of_parameter_names.add(name)
+                        if default_parent_arguments:
+                            node.parent_arguments.append(IDNode(name, -1))
+                    for type in parent_constructor.param_types:
+                        constructor_parameter_types.append(type)
+                except:
+                    #En este caso, el padre no tenia constructor, como sucede con Object por ejemplo
+                    pass
+            except Exception as ex:
+                self.errors.append((node.line, "The type " + parent_name + " is not defined"))
+
+        for func in node.function_declarations:
+            self.visit(func)
+        
         for parameter in node.own_parameters:
             new_parameter_name = parameter.id.lex
             if new_parameter_name in set_of_parameter_names:

@@ -191,7 +191,7 @@ class Interpreter_Visitor:
     @visitor.when(LiteralNode)
     def visit(self, node : LiteralNode, scope : Scope, args = None):
         print("Visited Literal Node")
-        return node.lex
+        return node.lex[1 : -1]
     
     @visitor.when(BooleanNode)
     def visit(self, node : BooleanNode, scope : Scope, args = None):
@@ -264,11 +264,16 @@ class Interpreter_Visitor:
     @visitor.when(ConcatNode)
     def visit(self, node : ConcatNode, scope : Scope):
         print("Visited ConcatNode")
-        return_value = str(self.visit(node.left, scope.create_child()))
+        return_value = self.visit(node.left, scope.create_child())
+        if not isinstance (return_value, str):
+            return_value = str(return_value)
         #Yes, we are savages!!
         for i in range(1, len(node.operator)):
-            return_value += " "
-        return_value += str(self.visit(node.right, scope.create_child()))
+            return_value = return_value + " "
+        suffix = self.visit(node.right, scope.create_child())
+        if not isinstance(suffix, str):
+            suffix = str(suffix)
+        return_value = return_value + suffix
         return return_value
     
     @visitor.when(PredefinedFunctionNode)
@@ -286,7 +291,12 @@ class Interpreter_Visitor:
             case 'cos':
                 return math.cos(value)
             case 'log':
-                return math.log(value)
+                try:
+                    base = value
+                    value = scope.find_variable('base').value
+                    return math.log(value, base)
+                except:
+                    return math.log(value)
             case 'sqrt':
                 return math.sqrt(value)
             case 'exp':

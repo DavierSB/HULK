@@ -13,6 +13,7 @@ SELF_ACCESOR_OUT_OF_A_FUNCTION = 'Variable "self" can only be used inside of a f
 LET_VARIABLE_ALREADY_DEFINED = 'Variable "%s" is already defined in this let expression.'
 ATTRIBUTE_ALREADY_DEFINED = 'Variable "%s" is already defined in type "%s"'
 ATTRIBUTE_NOT_DEFINED = 'Type "%s" does not contains an attribute named "%s"'
+ATTRIBUTES_ARE_PRIVATE = 'Attributes are always private'
 INCOMPATIBLE_TYPES = 'Cannot convert "%s" into "%s".'
 VARIABLE_NOT_DEFINED = 'Variable "%s" is not defined.'
 FUNCTION_NOT_DEFINED_GLOBALLY = 'Function "%s" is not defined with this parameters'
@@ -46,16 +47,22 @@ class TypeCheckerVisitor:
     @visitor.when(TypeDefinitionNode)
     def visit(self, node : TypeDefinitionNode, scope : Scope, args = None):
         print("Visited Type Definition Node")
-        #Primero que todo verificamos que se pasen los argumentos correctos al constructor del padre
+        self.current_type : Type = self.context.get_type(node.name.lex)
+        scope_for_attribute_declarations = scope.create_child()
+        constructor : Method = self.current_type.get_method('__constructor__')
+        param_names = constructor.param_names
+        param_types = constructor.param_types
+        for i in range(len(param_names)):
+            scope_for_attribute_declarations.define_variable(param_names[i], param_types[i])
+        
+        #Verifiquemos que se pasen los argumentos correctos al constructor del padre
         if node.parent_name:
             received_parent_arguments = []
             for argument in node.parent_arguments:
-                received_parent_arguments.append(self.visit(argument, scope.create_child()))
+                received_parent_arguments.append(self.visit(argument, scope_for_attribute_declarations))
             try:
                 parent : Type = self.context.get_type(node.parent_name.lex)
                 parent_constructor : Method = parent.get_method('__constructor__')
-                if len(received_parent_arguments) != len(parent_constructor.param_names):
-                    self.errors.append((node.line, BAD_CONSTRUCTOR_CALL%(parent.name, str(len(parent_constructor.param_names)), str(len(received_parent_arguments)))))
                 for i in range(len(received_parent_arguments)):
                     if not received_parent_arguments[i].conforms_to(parent_constructor.param_types[i]):
                         self.errors.append((node.line, INCOMPATIBLE_TYPES%(received_parent_arguments[i], parent_constructor.param_types[i])))
@@ -64,17 +71,20 @@ class TypeCheckerVisitor:
                 #definido. Este error debio ser reportado en el TypeBuilder. Por tanto, PASS
                 pass
 
-        self.current_type : Type = self.context.get_type(node.name.lex)
-        scope_for_attribute_declarations = scope.create_child()
-        constructor : Method = self.current_type.get_method('__constructor__')
-        param_names = constructor.param_names
-        param_types = constructor.param_types
-        for i in range(len(param_names)):
-            scope_for_attribute_declarations.define_variable(param_names[i], param_types[i])
         for attribute_declaration in node.attribute_declarations:
-            self.visit(attribute_declaration, scope_for_attribute_declarations)
+            attribute = self.current_type.get_attribute(attribute_declaration.id.lex)
+            inferred_type = self.visit(attribute_declaration, scope_for_attribute_declarations)
+            if not inferred_type.conforms_to(attribute.type):
+                self.errors.append((node.line, INCOMPATIBLE_TYPES%(inferred_type, attribute.type)))
+            else:
+                attribute.type = inferred_type
         for function_declaration in node.function_declarations:
-            self.visit(function_declaration, scope, node)
+            method = self.current_type.get_method(function_declaration.name.lex)
+            inferred_type = self.visit(function_declaration, scope, node)
+            if not inferred_type.conforms_to(method.return_type):
+                self.errors.append((node.line, INCOMPATIBLE_TYPES%(inferred_type, method.return_type)))
+            else:
+                method.return_type = inferred_type
         self.current_type = None
     
     @visitor.when(DeclarationNode)
@@ -131,6 +141,7 @@ class TypeCheckerVisitor:
         self.currently_inside_a_function = True
         func_expected_type = self.context.get_type(node.type_annotation.lex)
         body_scope = scope.create_child()
+        previous_base_method = self.base_method
         if self.current_type:
             body_scope.define_variable('self', self.current_type)
             if self.current_type.parent:
@@ -146,7 +157,8 @@ class TypeCheckerVisitor:
         if not func_inferred_type.conforms_to(func_expected_type):
             self.errors.append((node.line, INCOMPATIBLE_TYPES%(func_inferred_type.name, func_expected_type.name)))
         self.currently_inside_a_function = False
-        self.base_method = None
+        self.base_method = previous_base_method
+        return func_inferred_type
 
     #Expressions
     @visitor.when(ExpressionBlockNode)
@@ -221,15 +233,16 @@ class TypeCheckerVisitor:
         try:
             type_to_instantiate : Type = self.context.get_type(node.type_name.lex)
             constructor : Method = type_to_instantiate.get_method('__constructor__')
-            if len(received_arguments_types) != len(constructor.param_names):
-                self.errors.append((node.line, BAD_CONSTRUCTOR_CALL%(type_to_instantiate.name, str(len(constructor.param_names)), str(len(received_arguments_types)))))
             for i in range(len(received_arguments_types)):
                 if not received_arguments_types[i].conforms_to(constructor.param_types[i]):
                     self.errors.append((node.line, INCOMPATIBLE_TYPES%(received_arguments_types[i], constructor.param_types[i])))
             node.inferred_type = type_to_instantiate
             return type_to_instantiate
         except Exception as ex:
-            self.errors.append((node.line, ex.text))
+            try:
+                self.errors.append((node.line, ex.text))
+            except:
+                pass
             return ErrorType()
     
     @visitor.when(MemberNode)
@@ -243,20 +256,27 @@ class TypeCheckerVisitor:
             try:
                 function_name = node.right.name.lex
                 function_called : Method = left_side_type.get_method(function_name)
+                previous_current_type = self.current_type
+                self.current_type = left_side_type
                 inferred_type =  self.visit(node.right, scope.create_child(), function_called)
+                self.current_type = previous_current_type
                 node.inferred_type = inferred_type
                 return inferred_type
             except:
                 self.errors.append((node.line, FUNCTION_NOT_DEFINED_IN_TYPE%(left_side_type.name, function_name)))
                 return ErrorType()
         if isinstance(node.right, IDNode):
-            try:
-                attribute_name = node.right.lex
-                attribute : Attribute = left_side_type.get_attribute(attribute_name)
-                node.inferred_type = attribute.type
-                return attribute.type
-            except:
-                self.errors.append((node.line, ATTRIBUTE_NOT_DEFINED%(left_side_type.name, attribute_name)))
+            if isinstance(node.left, SelfNode):
+                try:
+                    attribute_name = node.right.lex
+                    attribute : Attribute = left_side_type.get_attribute(attribute_name)
+                    node.inferred_type = attribute.type
+                    return attribute.type
+                except:
+                    self.errors.append((node.line, ATTRIBUTE_NOT_DEFINED%(left_side_type.name, attribute_name)))
+                    return ErrorType()
+            else:
+                self.errors.append((node.line, ATTRIBUTES_ARE_PRIVATE))
                 return ErrorType()
         self.errors.append((node.line, BAD_MEMBER))
     
@@ -301,6 +321,7 @@ class TypeCheckerVisitor:
     
     @visitor.when(FunctionCallNode)
     def visit(self, node : FunctionCallNode, scope : Scope, args : Method = None):
+        print("Visit FunctionCallNode")
         method = args #Si es None, quiere decir que la funcion que llaman es global
         received_arguments_types : List[Type] = []
         for argument in node.arguments:
@@ -309,6 +330,13 @@ class TypeCheckerVisitor:
         if method is None:
             if node.name.lex == "base":
                 method = self.base_method
+                if method is None:
+                    method = node.base_method
+                else:
+                    node.base_method = self.base_method
+                    #Esto no es mas que un parche, porque el problema real es que se visite dos veces este nodo,
+                    #eso ta flojo
+
         if method is None:
             flag = False
             for func in self.global_functions:
@@ -322,16 +350,26 @@ class TypeCheckerVisitor:
                     method = func
                     break
         if method is None: #still
+            input()
             self.errors.append((node.line, FUNCTION_NOT_DEFINED_GLOBALLY%(node.name.lex)))
             return ErrorType()
         
         for i in range(len(received_arguments_types)):
             if not received_arguments_types[i].conforms_to(method.param_types[i]):
                 self.errors.append((node.line, INCOMPATIBLE_TYPES%(received_arguments_types[i], method.param_types[i])))
+            else:
+                scope.define_variable(method.param_names[i], method.param_types[i])
         
+        previous_currently_inside_a_function = self.currently_inside_a_function
+        self.currently_inside_a_function = True
+        inferred_type = self.visit(method.expression, scope.create_child())
+        self.currently_inside_a_function = previous_currently_inside_a_function
+        if not inferred_type.conforms_to(method.return_type):
+            self.errors.append((node.line, INCOMPATIBLE_TYPES%(inferred_type, method.return_type)))
+            return ErrorType()
         node.method = method
-        node.inferred_type = method.return_type
-        return method.return_type
+        node.inferred_type = inferred_type
+        return inferred_type #Ojo con esto
 
     #Operations
     @visitor.when(OrNode)
@@ -397,7 +435,8 @@ class TypeCheckerVisitor:
         left_inferred_type : Type = self.visit(node.left, scope.create_child())
         right_inferred_type : Type = self.visit(node.right, scope.create_child())
         literal_type = self.context.get_type('Literal')
-        if (not (left_inferred_type.name in ['Number', 'Literal', 'Boolean'])) or (not (right_inferred_type.name in ['Number', 'Literal', 'Boolean'])):
+        constant_type = self.context.get_type('Constant')
+        if (not (left_inferred_type.conforms_to(constant_type))) or (not (right_inferred_type.conforms_to(constant_type))):
             self.errors.append((node.line, INVALID_OPERATION%(node.operator, left_inferred_type.name, right_inferred_type.name)))
         node.inferred_type = literal_type
         return literal_type
@@ -416,3 +455,9 @@ class TypeCheckerVisitor:
         return_type = self.context.get_type(node.right.lex)
         node.inferred_type = return_type
         return return_type
+    
+    @visitor.when(PredefinedFunctionNode)
+    def visit(self, node : PredefinedFunctionNode, scope : Scope, args = Node):
+        if node.lex == 'print':
+            return VoidType()
+        return self.context.get_type('Number')

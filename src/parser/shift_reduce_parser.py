@@ -31,10 +31,11 @@ class ShiftReduceParser:
                 lookahead = w[cursor]
             else:
                 lookahead = w[cursor].token_type
-                
-            # Your code here!!! (Detect error)
             
-            action, tag = self.action[state, lookahead]
+            try:
+                action, tag = self.action[state, lookahead]
+            except:
+                raise Exception("ERROR line " + str(w[cursor].line) + ": Unexpected " + w[cursor].lex + " found")
             if get_shift_reduce:
                 operations.append(action)
             match action:

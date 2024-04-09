@@ -1,5 +1,6 @@
 import itertools as itt
 from collections import OrderedDict
+from typing import List
 
 
 class SemanticError(Exception):
@@ -111,9 +112,9 @@ class Type:
         return plain.values() if clean else plain
 
     def conforms_to(self, other):
-        return other.bypass() or self == other or self.parent is not None and self.parent.conforms_to(other)
+        return other.bypass(self) or self == other or self.parent is not None and self.parent.conforms_to(other)
 
-    def bypass(self):
+    def bypass(self, other = None):
         return False
 
     def __str__(self):
@@ -139,7 +140,7 @@ class ErrorType(Type):
     def conforms_to(self, other):
         return True
 
-    def bypass(self):
+    def bypass(self, other = None):
         return True
 
     def __eq__(self, other):
@@ -152,7 +153,7 @@ class VoidType(Type):
     def conforms_to(self, other):
         return self == other #Cambie esto
 
-    def bypass(self):
+    def bypass(self, other = None):
         return True
 
     def __eq__(self, other):
@@ -164,6 +165,16 @@ class IntType(Type):
 
     def __eq__(self, other):
         return other.name == self.name or isinstance(other, IntType)
+
+class AnyType(Type):
+    def __init__(self):
+        super().__init__('Any')
+    
+    def conforms_to(self, other):
+        return True
+    
+    def bypass(self, other = None):
+        return True
 
 class Context:
     def __init__(self):
