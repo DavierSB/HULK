@@ -22,13 +22,14 @@ BAD_MEMBER = 'Just functions and ids allowed as members of a class'
 BAD_CONSTRUCTOR_CALL = 'Type "%s" recquires "%s" parameters for its construction, not "%s"'
 
 class TypeCheckerVisitor:
-    def __init__(self, context : Context, global_functions : Set[Method], errors):
+    def __init__(self, context : Context, global_functions : Set[Method], errors, show = False):
         self.context = context
         self.global_functions = global_functions
         self.current_type : Type = None
         self.currently_inside_a_function : bool = False
         self.base_method : Method = None
         self.errors = errors
+        self.show = show
 
     @visitor.on('node')
     def visit(self, node : Node, scope, args = None):
@@ -36,7 +37,7 @@ class TypeCheckerVisitor:
 
     @visitor.when(ProgramNode)
     def visit(self, node : ProgramNode, scope : Scope = None, args = None):
-        print("Visited Program Node")
+        if self.show:print("Visited Program Node")
         if not scope:
             scope = Scope()
         for statement in node.statements:
@@ -45,7 +46,7 @@ class TypeCheckerVisitor:
     
     @visitor.when(TypeDefinitionNode)
     def visit(self, node : TypeDefinitionNode, scope : Scope, args = None):
-        print("Visited Type Definition Node")
+        if self.show: print("Visited Type Definition Node")
         self.current_type : Type = self.context.get_type(node.name.lex)
         scope_for_attribute_declarations = scope.create_child()
         constructor : Method = self.current_type.get_method('__constructor__')
@@ -88,7 +89,7 @@ class TypeCheckerVisitor:
     
     @visitor.when(DeclarationNode)
     def visit(self, node : DeclarationNode, scope : Scope, args : bool = False):
-        print("Visited Declaration Node")
+        if self.show: print("Visited Declaration Node")
         inside_a_let = args
         var_name = node.id.lex
         if inside_a_let:
@@ -106,7 +107,7 @@ class TypeCheckerVisitor:
     
     @visitor.when(ReassignNode)
     def visit(self, node : ReassignNode, scope : Scope, args = None):
-        print("Visited Reassign Node")
+        if self.show:print("Visited Reassign Node")
         #SOLO ACEPTO REASIGNACIONES QUE MANTENGAN EL TIPO ORIGINAL DE LA VARIABLE
         if isinstance(node.left, MemberNode):
             if isinstance(node.left.right, FunctionCallNode):
@@ -133,7 +134,7 @@ class TypeCheckerVisitor:
     
     @visitor.when(FunctionDefinitionNode)
     def visit(self, node : FunctionDefinitionNode, scope : Scope, args = None):
-        print("Visited Function Definition Node")
+        if self.show:print("Visited Function Definition Node")
         self.currently_inside_a_function = True
         func_expected_type = self.context.get_type(node.type_annotation.lex)
         body_scope = scope.create_child()
@@ -159,7 +160,7 @@ class TypeCheckerVisitor:
     #Expressions
     @visitor.when(ExpressionBlockNode)
     def visit(self, node : ExpressionBlockNode, scope : Scope, args = None):
-        print("Visited Block Expression Node")
+        if self.show:print("Visited Block Expression Node")
         return_type = VoidType()
         for expression in node.expressions:
             return_type = self.visit(expression, scope)
@@ -168,7 +169,7 @@ class TypeCheckerVisitor:
     
     @visitor.when(LetNode)
     def visit(self, node : LetNode, scope : Scope, args = None):
-        print("Visited Let Node")
+        if self.show:print("Visited Let Node")
         body_scope = scope.create_child()
         for declaration in node.declarations:
             self.visit(declaration, body_scope, True)
@@ -177,7 +178,7 @@ class TypeCheckerVisitor:
 
     @visitor.when(IfNode)
     def visit(self, node : IfNode, scope : Scope, args = None):
-        print("Visited If Node")
+        if self.show:print("Visited If Node")
         boolean_type = self.context.get_type('Boolean')
         for condition in node.conditions:
             condition_type = self.visit(condition, scope.create_child())
@@ -212,7 +213,7 @@ class TypeCheckerVisitor:
 
     @visitor.when(WhileNode)
     def visit(self, node : WhileNode, scope : Scope, args = None):
-        print("Visited While Node")
+        if self.show:print("Visited While Node")
         boolean_type = self.context.get_type('Boolean')
         condition_type = self.visit(node.condition, scope.create_child())
         if not condition_type.conforms_to(boolean_type):
@@ -222,7 +223,7 @@ class TypeCheckerVisitor:
     
     @visitor.when(NewNode)
     def visit(self, node : NewNode, scope : Scope, args = None):
-        print("Visited New Node")
+        if self.show:print("Visited New Node")
         received_arguments_types : List[Type] = []
         for argument in node.arguments:
             received_arguments_types.append(self.visit(argument, scope.create_child()))
@@ -246,7 +247,7 @@ class TypeCheckerVisitor:
     
     @visitor.when(MemberNode)
     def visit(self, node : MemberNode, scope : Scope, args = None):
-        print("Visited Member Node")
+        if self.show:print("Visited Member Node")
         if isinstance(node.left, SelfNode):
             if not self.currently_inside_a_function:
                 self.errors.append((node.line, SELF_ACCESOR_OUT_OF_A_FUNCTION))
@@ -282,7 +283,7 @@ class TypeCheckerVisitor:
     #Constant Values
     @visitor.when(IDNode)
     def visit(self, node : IDNode, scope : Scope, args = None):
-        print("Visited ID Node")
+        if self.show:print("Visited ID Node")
         try:
             type = scope.find_variable(node.lex).type
             node.inferred_type = type
@@ -293,34 +294,34 @@ class TypeCheckerVisitor:
     
     @visitor.when(SelfNode)
     def visit(self, node : SelfNode, scope : Scope, args = None):
-        print("Visited Self Node")
+        if self.show:print("Visited Self Node")
         node.inferred_type  = self.current_type
         return self.current_type
     
     @visitor.when(NumberNode)
     def visit(self, node : NumberNode, scope : Scope, args = None):
-        print("Visited Number Node")
+        if self.show:print("Visited Number Node")
         number_type = self.context.get_type('Number')
         node.inferred_type = number_type
         return number_type
     
     @visitor.when(LiteralNode)
     def visit(self, node : LiteralNode, scope : Scope, args = None):
-        print("Visited Literal Node")
+        if self.show:print("Visited Literal Node")
         literal_type = self.context.get_type('Literal')
         node.inferred_type = literal_type
         return literal_type
     
     @visitor.when(BooleanNode)
     def visit(self, node : BooleanNode, scope : Scope, args = None):
-        print("Visited Boolean Node")
+        if self.show:print("Visited Boolean Node")
         boolean_type = self.context.get_type('Boolean')
         node.inferred_type = boolean_type
         return boolean_type
     
     @visitor.when(FunctionCallNode)
     def visit(self, node : FunctionCallNode, scope : Scope, args : Method = None):
-        print("Visit FunctionCallNode")
+        if self.show:print("Visit FunctionCallNode")
         method = args #Si es None, quiere decir que la funcion que llaman es global
         received_arguments_types : List[Type] = []
         previous_base_method = self.base_method
@@ -362,15 +363,8 @@ class TypeCheckerVisitor:
                 self.errors.append((node.line, INCOMPATIBLE_TYPES%(received_arguments_types[i], method.param_types[i])))
             else:
                 scope.define_variable(method.param_names[i], method.param_types[i])
-        
-        #previous_currently_inside_a_function = self.currently_inside_a_function
-        #self.currently_inside_a_function = True
-        #inferred_type = self.visit(method.expression, scope.create_child())
-        #self.currently_inside_a_function = previous_currently_inside_a_function
+
         self.base_method = previous_base_method
-        #if not inferred_type.conforms_to(method.return_type):
-        #    self.errors.append((node.line, INCOMPATIBLE_TYPES%(inferred_type, method.return_type)))
-        #    return ErrorType()
         node.method = method
         node.inferred_type = method.return_type
         return method.return_type
@@ -378,7 +372,7 @@ class TypeCheckerVisitor:
     #Operations
     @visitor.when(OrNode)
     def visit(self, node : OrNode, scope : Scope, args = None):
-        print("Visited Or Node")
+        if self.show:print("Visited Or Node")
         left_inferred_type : Type = self.visit(node.left, scope.create_child())
         right_inferred_type : Type = self.visit(node.right, scope.create_child())
         boolean_type = self.context.get_type('Boolean')
@@ -389,7 +383,7 @@ class TypeCheckerVisitor:
     
     @visitor.when(AndNode)
     def visit(self, node : AndNode, scope : Scope, args = None):
-        print("Visited And Node")
+        if self.show:print("Visited And Node")
         left_inferred_type : Type = self.visit(node.left, scope.create_child())
         right_inferred_type : Type = self.visit(node.right, scope.create_child())
         boolean_type = self.context.get_type('Boolean')
@@ -400,7 +394,7 @@ class TypeCheckerVisitor:
     
     @visitor.when(NotNode)
     def visit(self, node : NotNode, scope : Scope, args = None):
-        print("Visited Not Node")
+        if self.show:print("Visited Not Node")
         node_inferred_type : Type = self.visit(node.node, scope.create_child())
         boolean_type = self.context.get_type('Boolean')
         if not(node_inferred_type.conforms_to(boolean_type)):
@@ -411,7 +405,7 @@ class TypeCheckerVisitor:
     
     @visitor.when(ComparerNode)
     def visit(self, node : ComparerNode, scope : Scope, args = None):
-        print("Visited Comparer Node")
+        if self.show:print("Visited Comparer Node")
         left_inferred_type : Type = self.visit(node.left, scope.create_child())
         right_inferred_type : Type = self.visit(node.right, scope.create_child())
         boolean_type = self.context.get_type('Boolean')
@@ -424,7 +418,7 @@ class TypeCheckerVisitor:
     
     @visitor.when(ArithmeticNode)
     def visit(self, node : ArithmeticNode, scope : Scope, args = None):
-        print("Visited Arithmetic Node")
+        if self.show:print("Visited Arithmetic Node")
         left_inferred_type : Type = self.visit(node.left, scope.create_child())
         right_inferred_type : Type = self.visit(node.right, scope.create_child())
         number_type = self.context.get_type('Number')
@@ -435,7 +429,7 @@ class TypeCheckerVisitor:
     
     @visitor.when(ConcatNode)
     def visit(self, node : ConcatNode, scope : Scope, args = None):
-        print("Visited Concat Node")
+        if self.show:print("Visited Concat Node")
         left_inferred_type : Type = self.visit(node.left, scope.create_child())
         right_inferred_type : Type = self.visit(node.right, scope.create_child())
         literal_type = self.context.get_type('Literal')
@@ -447,7 +441,7 @@ class TypeCheckerVisitor:
     
     @visitor.when(IsNode)
     def visit(self, node : IsNode, scope : Scope, args = None):
-        print("Visited Is Node")
+        if self.show: print("Visited Is Node")
         self.visit(node.left, scope.create_child())
         boolean_type = self.context.get_type('Boolean')
         node.inferred_type = boolean_type
@@ -455,7 +449,7 @@ class TypeCheckerVisitor:
     
     @visitor.when(AsNode)
     def visit(self, node : AsNode, scope : Scope, args = None):
-        print("Visited As Node")
+        if self.show: print("Visited As Node")
         return_type = self.context.get_type(node.right.lex)
         node.inferred_type = return_type
         return return_type

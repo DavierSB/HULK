@@ -64,10 +64,11 @@ class Object_Instance:
         return return_value
 
 class Interpreter_Visitor:
-    def __init__(self, context : Context, global_functions : Set[Method]):
+    def __init__(self, context : Context, global_functions : Set[Method], show = False):
         self.context = context
         self.global_functions = global_functions
         self.owner = None
+        self.show = show
     
     @visitor.on("node")
     def visit(self, node, scope):
@@ -75,21 +76,21 @@ class Interpreter_Visitor:
 
     @visitor.when(ProgramNode)
     def visit(self, node : ProgramNode, scope : Scope = None):
-        print("Visited Program Node")
+        if self.show:print("Visited Program Node")
         if not scope:
             scope = Scope()
         return self.visit(node.expression, scope)
     
     @visitor.when(DeclarationNode)
     def visit(self, node : DeclarationNode, scope : Scope):
-        print("Visited Declaration Node")
+        if self.show:print("Visited Declaration Node")
         type = node.expression.inferred_type
         value = self.visit(node.expression, scope.create_child())
         scope.define_variable(node.id.lex, type, value)
     
     @visitor.when(ReassignNode)
     def visit(self, node : ReassignNode, scope : Scope):
-        print("Visited Reassign Node")
+        if self.show:print("Visited Reassign Node")
         value = self.visit(node.right, scope.create_child())
         if isinstance(node.left, MemberNode):
             owner_of_attribute : Object_Instance = self.visit(node.left.left, scope.create_child())
@@ -102,7 +103,7 @@ class Interpreter_Visitor:
     
     @visitor.when(ExpressionBlockNode)
     def visit(self, node : ExpressionBlockNode, scope : Scope):
-        print("Visited Expression Block Node")
+        if self.show:print("Visited Expression Block Node")
         value = None
         for expression in node.expressions:
             value = self.visit(expression, scope.create_child())
@@ -110,14 +111,14 @@ class Interpreter_Visitor:
     
     @visitor.when(LetNode)
     def visit(self, node : LetNode, scope : Scope):
-        print("Visited LetNode")
+        if self.show:print("Visited LetNode")
         for declaration in node.declarations:
             self.visit(declaration, scope)
         return self.visit(node.expression, scope)
     
     @visitor.when(IfNode)
     def visit(self, node : IfNode, scope : Scope):
-        print("Visited IfNode")
+        if self.show:print("Visited IfNode")
         idx = 0
         for condition in node.conditions:
             if self.visit(condition, scope.create_child()):
@@ -132,7 +133,7 @@ class Interpreter_Visitor:
     
     @visitor.when(WhileNode)
     def visit(self, node : WhileNode, scope : Scope):
-        print("Visited WhileNode")
+        if self.show:print("Visited WhileNode")
         value = None
         while self.visit(node.condition, scope.create_child()):
             value = self.visit(node.expression, scope.create_child())
@@ -151,7 +152,7 @@ class Interpreter_Visitor:
 
     @visitor.when(NewNode)
     def visit(self, node : NewNode, scope : Scope):
-        print("Visited NewNode")
+        if self.show:print("Visited NewNode")
         type_to_instantiate = node.inferred_type
         constructor : Method = type_to_instantiate.get_method('__constructor__')
         arguments = self.process_arguments(node.arguments, constructor, scope.create_child())
@@ -162,7 +163,7 @@ class Interpreter_Visitor:
     
     @visitor.when(MemberNode)
     def visit(self, node : MemberNode, scope : Scope):
-        print("Visited MemberNode")
+        if self.show:print("Visited MemberNode")
         object_instance : Object_Instance = self.visit(node.left, scope.create_child())
         if isinstance(node.right, FunctionCallNode):
             func_name = node.right.name.lex
@@ -175,32 +176,32 @@ class Interpreter_Visitor:
     #Constant Values
     @visitor.when(IDNode)
     def visit(self, node : IDNode, scope : Scope, args = None):
-        print("Visited IDNode")
+        if self.show:print("Visited IDNode")
         return scope.find_variable(node.lex).value
     
     @visitor.when(SelfNode)
     def visit(self, node : SelfNode, scope : Scope, args = None):
-        print("Visited Self Node")
+        if self.show:print("Visited Self Node")
         return self.owner
     
     @visitor.when(NumberNode)
     def visit(self, node : NumberNode, scope : Scope, args = None):
-        print("Visited Number Node")
+        if self.show:print("Visited Number Node")
         return float(node.lex)
     
     @visitor.when(LiteralNode)
     def visit(self, node : LiteralNode, scope : Scope, args = None):
-        print("Visited Literal Node")
+        if self.show:print("Visited Literal Node")
         return node.lex[1 : -1]
     
     @visitor.when(BooleanNode)
     def visit(self, node : BooleanNode, scope : Scope, args = None):
-        print("Visited Boolean Node")
+        if self.show:print("Visited Boolean Node")
         return bool(self.lex)
 
     @visitor.when(FunctionCallNode)
     def visit(self, node : FunctionCallNode, scope : Scope):
-        print("Visited FunctionCallNode")
+        if self.show:print("Visited FunctionCallNode")
         #Solo llegara aqui si la funcion que esta siendo llamada es global
         method = node.method
         for var in self.process_arguments(node.arguments, method, scope):
@@ -209,22 +210,22 @@ class Interpreter_Visitor:
     
     @visitor.when(OrNode)
     def visit(self, node : OrNode, scope : Scope):
-        print("Visited OrNode")
+        if self.show:print("Visited OrNode")
         return self.visit(node.left, scope.create_child()) or self.visit(node.right, scope.create_child())
     
     @visitor.when(AndNode)
     def visit(self, node : AndNode, scope : Scope):
-        print("Visited AndNode")
+        if self.show:print("Visited AndNode")
         return self.visit(node.left, scope.create_child()) or self.visit(node.right, scope.create_child())
     
     @visitor.when(NotNode)
     def visit(self, node : NotNode, scope : Scope):
-        print("Visited NotNode")
+        if self.show:print("Visited NotNode")
         return not(self.visit(node.node, scope))
     
     @visitor.when(ComparerNode)
     def visit(self, node : ComparerNode, scope : Scope):
-        print("Visited ComparerNode")
+        if self.show:print("Visited ComparerNode")
         match node.operator:
             case '<=':
                 return self.visit(node.left, scope.create_child()) <= self.visit(node.right, scope.create_child())
@@ -241,7 +242,7 @@ class Interpreter_Visitor:
     
     @visitor.when(ArithmeticNode)
     def visit(self, node : ArithmeticNode, scope : Scope):
-        print("Visited ArithmeticNode")
+        if self.show:print("Visited ArithmeticNode")
         match node.operator:
             case '+':
                 return self.visit(node.left, scope.create_child()) + self.visit(node.right, scope.create_child())
@@ -263,7 +264,7 @@ class Interpreter_Visitor:
     
     @visitor.when(ConcatNode)
     def visit(self, node : ConcatNode, scope : Scope):
-        print("Visited ConcatNode")
+        if self.show:print("Visited ConcatNode")
         return_value = self.visit(node.left, scope.create_child())
         if not isinstance (return_value, str):
             return_value = str(return_value)
@@ -278,7 +279,7 @@ class Interpreter_Visitor:
     
     @visitor.when(PredefinedFunctionNode)
     def visit(self, node : PredefinedFunctionNode, scope : Scope):
-        print("Visited PredefinedFunctionNode")
+        if self.show:print("Visited PredefinedFunctionNode")
         if node.lex == 'rand':
             return random()
         value = scope.find_variable('value').value
@@ -304,7 +305,7 @@ class Interpreter_Visitor:
     
     @visitor.when(IsNode)
     def visit(self, node : IsNode, scope : Scope):
-        print("Visited IsNode")
+        if self.show:print("Visited IsNode")
         value = self.visit(node.left, scope)
         match node.right.lex:
             case 'Number':
@@ -318,7 +319,7 @@ class Interpreter_Visitor:
     
     @visitor.when(AsNode)
     def visit(self, node : AsNode, scope : Scope):
-        print("Visited AsNode")
+        if self.show:print("Visited AsNode")
         value = self.visit(node.left, scope)
         match node.right.lex:
             case 'Number':

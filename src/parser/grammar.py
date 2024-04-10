@@ -192,11 +192,12 @@ parameters %= id + type_annotation, lambda h, s: [ParameterNode(IDNode(s[1].lex,
 parameters %= id + type_annotation + comma + parameters, lambda h, s: [ParameterNode(IDNode(s[1].lex, s[1].line), s[2], s[1].line)] + s[4]
 
 #Type definition
+#Solo permitimos dos formas de definir tipos:
+#con los parametros por default, o sea, no se especifican los de la clase o su padre
+#especificando los parametros del tipo y de su padre
 type_definition %= type_ + id + type_block, lambda h, s: TypeDefinitionNode(TypeNameNode(s[2].lex, s[1].line), [], None, None, s[3], s[1].line)
 type_definition %= type_ + id + lparen + parameters + rparen + type_block, lambda h, s: TypeDefinitionNode(TypeNameNode(s[2].lex, s[1].line), s[4], None, None, s[6], s[1].line)
 type_definition %= type_ + id + inherits + type_name + type_block, lambda h, s: TypeDefinitionNode(TypeNameNode(s[2].lex, s[1].line), [], s[4], [], s[5], s[1].line)
-#type_definition %= type_ + id + inherits + type_name + lparen + arguments + rparen + type_block, lambda h, s: TypeDefinitionNode(TypeNameNode(s[2].lex, s[1].line), [], s[4], s[6], s[8], s[1].line)
-#type_definition %= type_ + id + lparen + parameters + rparen + inherits + type_name + type_block, lambda h, s: TypeDefinitionNode(TypeNameNode(s[2].lex, s[1].line), s[4], s[7], [], s[8], s[1].line)
 type_definition %= type_ + id + lparen + parameters + rparen + inherits + type_name + lparen + arguments + rparen + type_block, lambda h, s: TypeDefinitionNode(TypeNameNode(s[2].lex, s[1].line), s[4], s[7], s[9], s[11], s[1].line)
 
 type_block %= lbrace + internal_declarations + rbrace, lambda h, s: s[2]

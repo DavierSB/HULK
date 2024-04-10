@@ -9,7 +9,7 @@ from firsts_and_follows import compute_firsts, compute_follows
 
 def build_LR0_automaton(G):
     assert len(G.startSymbol.productions) == 1, 'Grammar must be augmented'
-
+    
     start_production = G.startSymbol.productions[0]
     start_item = Item(start_production, 0)
     automaton = State(start_item, True)
