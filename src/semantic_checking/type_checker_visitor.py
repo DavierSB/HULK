@@ -10,7 +10,6 @@ from typing import Set
 WRONG_SIGNATURE = 'Method "%s" already defined in "%s" with a different signature.'
 SELF_IS_READONLY = 'Variable "self" is read-only.'
 SELF_ACCESOR_OUT_OF_A_FUNCTION = 'Variable "self" can only be used inside of a function'
-LET_VARIABLE_ALREADY_DEFINED = 'Variable "%s" is already defined in this let expression.'
 ATTRIBUTE_ALREADY_DEFINED = 'Variable "%s" is already defined in type "%s"'
 ATTRIBUTE_NOT_DEFINED = 'Type "%s" does not contains an attribute named "%s"'
 ATTRIBUTES_ARE_PRIVATE = 'Attributes are always private'
@@ -92,9 +91,6 @@ class TypeCheckerVisitor:
         print("Visited Declaration Node")
         inside_a_let = args
         var_name = node.id.lex
-        if scope.is_local(var_name):
-            if inside_a_let:
-                self.errors.append((node.line, LET_VARIABLE_ALREADY_DEFINED%(var_name, self.current_method.name)))
         if inside_a_let:
             var_expected_type = self.context.get_type(node.type_annotation.lex)
         else:
@@ -234,7 +230,7 @@ class TypeCheckerVisitor:
             type_to_instantiate : Type = self.context.get_type(node.type_name.lex)
             constructor : Method = type_to_instantiate.get_method('__constructor__')
             if len(received_arguments_types) != len(constructor.param_names):
-                self.errors.append((node.line, BAD_CONSTRUCTOR_CALL%(type_to_instantiate, len(constructor.param_names), len(received_arguments_types))))
+                self.errors.append((node.line, BAD_CONSTRUCTOR_CALL%(type_to_instantiate.name, len(constructor.param_names), len(received_arguments_types))))
                 return ErrorType()
             for i in range(len(received_arguments_types)):
                 if not received_arguments_types[i].conforms_to(constructor.param_types[i]):
@@ -367,17 +363,17 @@ class TypeCheckerVisitor:
             else:
                 scope.define_variable(method.param_names[i], method.param_types[i])
         
-        previous_currently_inside_a_function = self.currently_inside_a_function
-        self.currently_inside_a_function = True
-        inferred_type = self.visit(method.expression, scope.create_child())
-        self.currently_inside_a_function = previous_currently_inside_a_function
+        #previous_currently_inside_a_function = self.currently_inside_a_function
+        #self.currently_inside_a_function = True
+        #inferred_type = self.visit(method.expression, scope.create_child())
+        #self.currently_inside_a_function = previous_currently_inside_a_function
         self.base_method = previous_base_method
-        if not inferred_type.conforms_to(method.return_type):
-            self.errors.append((node.line, INCOMPATIBLE_TYPES%(inferred_type, method.return_type)))
-            return ErrorType()
+        #if not inferred_type.conforms_to(method.return_type):
+        #    self.errors.append((node.line, INCOMPATIBLE_TYPES%(inferred_type, method.return_type)))
+        #    return ErrorType()
         node.method = method
-        node.inferred_type = inferred_type
-        return inferred_type #Ojo con esto
+        node.inferred_type = method.return_type
+        return method.return_type
 
     #Operations
     @visitor.when(OrNode)

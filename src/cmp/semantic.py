@@ -151,7 +151,7 @@ class VoidType(Type):
         Type.__init__(self, '<void>')
 
     def conforms_to(self, other):
-        return self == other #Cambie esto
+        return other.bypass() or (self == other) #Cambie esto
 
     def bypass(self, other = None):
         return True

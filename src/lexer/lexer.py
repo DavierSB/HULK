@@ -86,13 +86,3 @@ class Lexer:
 
 all_tokens = tokens
 lexer = Lexer(tokens, reserved_words, G.EOF)
-
-def the_ultimate_test():
-    with open('src/tests/data/prueba_long.txt', 'r') as f_in:
-        code = f_in.read()
-    tokens = lexer(code)
-    for token in tokens:
-        print(token)
-        input()
-
-#the_ultimate_test()

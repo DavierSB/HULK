@@ -54,50 +54,41 @@ class TypeBuilderVisitor:
         constructor_parameter_names = []
         set_of_parameter_names = set()
         constructor_parameter_types = []
-        node.parent_arguments = []
+        if not node.parent_arguments:
+            node.parent_arguments = []
         
         if node.parent_name:
-            parent_name = node.parent_name.lex
-            try:
-                parent : Type = self.context.get_type(parent_name)
-                self.type_being_build.set_parent(parent)
-                try:
-                    parent_constructor : Method = parent.get_method('__constructor__')
-                    default_parent_arguments = False
-                    if not node.parent_arguments:
-                        default_parent_arguments = True
-                    for name in parent_constructor.param_names:
-                        constructor_parameter_names.append(name)
-                        set_of_parameter_names.add(name)
-                        if default_parent_arguments:
-                            node.parent_arguments.append(IDNode(name, -1))
-                    for type in parent_constructor.param_types:
-                        constructor_parameter_types.append(type)
-                except:
-                    #En este caso, el padre no tenia constructor, como sucede con Object por ejemplo
-                    pass
-            except Exception as ex:
-                self.errors.append((node.line, "The type " + parent_name + " is not defined"))
+            self.type_being_build.set_parent(self.context.get_type(node.parent_name.lex))
         else:
             self.type_being_build.set_parent(self.context.get_type('Object'))
-
+        parent_constructor : Method = self.type_being_build.parent.get_method('__constructor__')
+        if len(node.own_parameters) == 0:
+            node.parent_arguments = []
+            for name in parent_constructor.param_names:
+                constructor_parameter_names.append(name)
+                set_of_parameter_names.add(name)
+                node.parent_arguments.append(IDNode(name, -1))
+            for type in parent_constructor.param_types:
+                constructor_parameter_types.append(type)
+        else:
+            for parameter in node.own_parameters:
+                new_parameter_name = parameter.id.lex
+                if new_parameter_name in set_of_parameter_names:
+                    self.errors.append((node.line, "All parameters must be named different"))
+                set_of_parameter_names.add(new_parameter_name)
+                constructor_parameter_names.append(new_parameter_name)
+                try:
+                    new_parameter_type = self.context.get_type(parameter.type_annotation.lex)
+                except Exception as ex:
+                    self.errors.append((node.line, ex.text))
+                    new_parameter_type = ErrorType()
+                constructor_parameter_types.append(new_parameter_type)
+        
         for func in node.function_declarations:
             self.visit(func)
         
-        for parameter in node.own_parameters:
-            new_parameter_name = parameter.id.lex
-            if new_parameter_name in set_of_parameter_names:
-                self.errors.append((node.line, "All parameters must be named different"))
-            set_of_parameter_names.add(new_parameter_name)
-            constructor_parameter_names.append(new_parameter_name)
-            try:
-                new_parameter_type = self.context.get_type(parameter.type_annotation.lex)
-            except Exception as ex:
-                self.errors.append((node.line, ex.text))
-                new_parameter_type = ErrorType()
-            constructor_parameter_types.append(new_parameter_type)
         constructor_body = ExpressionBlockNode([], -1)
-        constructor_body.parent_arguments = node.parent_arguments #El parche para que entrara la herencia en el interpreter
+        constructor_body.parent_arguments = node.parent_arguments
         for attr in node.attribute_declarations:
             self.visit(attr)
             constructor_body.expressions.append(attr)

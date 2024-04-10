@@ -60,14 +60,3 @@ def regex_tokenizer(text : str, skip_whitespaces=True):
         
     tokens.append(Token('$', G.EOF))
     return tokens
-
-def literal_test():
-    dfa = Regex(tokens['LITERAL']).automaton
-    assert not dfa.recognize('')
-    assert dfa.recognize('"a"')
-    assert dfa.recognize('"Hola"')
-    assert dfa.recognize('"Hola Mundo"')
-    assert dfa.recognize('"Hola me llamo \\"Davier\\" que bola"')
-
-#literal_test()
-#print("LLEGUEEEEEE")
